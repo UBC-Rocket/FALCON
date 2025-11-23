@@ -12,13 +12,13 @@
 #define SLEEP_TIME_MS   500
 
 /* The devicetree node identifier for the "led0" alias. */
-#define LEDG_NODE DT_ALIAS(ledg)
+#define LED0_NODE DT_ALIAS(led0)
 
 /*
  * A build error on this line means your board is unsupported.
  * See the sample documentation for information on how to fix this.
  */
-static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LEDG_NODE, gpios);
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
 int main(void)
 {
