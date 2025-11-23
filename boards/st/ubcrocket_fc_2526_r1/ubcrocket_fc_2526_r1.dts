@@ -1,0 +1,83 @@
+/dts-v1/;
+#include "ubcrocket_fc_2526_r1-common.dtsi"
+
+/ {
+	model = "UBC Rocket Flight Controller 2025-26 Rev 1.0";
+	compatible = "ubcrocket,ubcrocket_fc_2526_r1";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+		zephyr,sram = &sram1;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+    leds: leds {
+		compatible = "gpio-leds";
+
+		green_led_1: led_0 {
+			gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
+			label = "User LED0";
+		};
+
+        red_led_1: led_1 {
+			gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
+			label = "User LD1";
+		};
+	};
+
+    
+
+	aliases {
+        ledg = &green_led_1;
+        ledr = &red_led_1;
+        accel0 = &bmi088_accel;
+        gyro0 = &bmi088_gyro;
+    };
+};
+
+// Enable and configure SPI2 with BMI088 sensors
+&spi2 {
+    status = "okay";
+    pinctrl-0 = <&spi2_sck_pb10 &spi2_mosi_pc1 &spi2_miso_pc2>;
+    pinctrl-names = "default";
+    
+    // Chip select pins: Accel on PD13, Gyro on PC7
+    cs-gpios = <&gpiod 15 GPIO_ACTIVE_LOW>, <&gpioc 7 GPIO_ACTIVE_LOW>; // CS for accel, gyroscope
+
+    // BMI088 Accelerometer
+    bmi088_accel: bmi088-accel@0 {
+        status = "okay";
+        compatible = "bosch,bmi08x-accel";
+        reg = <0>;// First device - uses PD15 for CS
+        spi-max-frequency = <10000000>;                 // 10 MHz
+
+        // Required properties:  https://docs.zephyrproject.org/latest/build/dts/api/bindings/sensor/bosch%2Cbmi08x-accel-spi.html
+        accel-hz = "400";                               // Frequency
+        accel-fs = <24>;                                // Full scale
+        
+        // Interrupt pins
+        // int-gpios = <&gpiod 12 GPIO_ACTIVE_HIGH>;    // INT1 on PD12 - if needed
+        // int2-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;   // INT2 on PD14 - if needed
+    };
+
+    // BMI088 Gyroscope
+    bmi088_gyro: bmi088-gyro@1 {
+        status = "okay";
+        compatible = "bosch,bmi08x-gyro";
+        reg = <1>;                                      // Second device - uses PC7 for CS
+        spi-max-frequency = <10000000>;                 // 10 MHz
+        
+        // Required properties: https://docs.zephyrproject.org/latest/build/dts/api/bindings/sensor/bosch%2Cbmi08x-gyro-spi.html
+        gyro-hz = "1000_116";                           // Frequency
+        gyro-fs = <2000>;                               // Full scale
+
+        // Interrupt pins
+        // int-gpios = <&gpiod 11 GPIO_ACTIVE_HIGH>;    // INT3 on PD11 - if needed
+        // int4-gpios = <&gpiod 10 GPIO_ACTIVE_HIGH>;   // INT4 on PD10 - if needed
+    };
+};

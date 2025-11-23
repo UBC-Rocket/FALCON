@@ -1,0 +1,8 @@
+# STM32H563ZI Nucleo board configuration
+
+# Copyright (c) 2023 Thomas Stranger
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_UBCROCKET_FC_2526_R1
+
+endif # BOARD_UBCROCKET_FC_2526_R1

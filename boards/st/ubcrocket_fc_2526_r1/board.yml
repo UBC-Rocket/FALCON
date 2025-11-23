@@ -1,0 +1,7 @@
+board:
+    name: ubcrocket_fc_2526_r1
+    full_name: UBC Rocket Flight Controller 2025-26 Rev 1.0
+    vendor: st
+    socs:
+        - name: stm32h563xx
+ 
