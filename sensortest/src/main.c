@@ -1,49 +1,54 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/drivers/sensor.h>
-#include <zephyr/sys/printk.h>
+#include <stdio.h>
+
+/*
+ * Get a device structure from a devicetree node from alias
+ * "pressure_sensor".
+ */
+static const struct device *get_pressure_sensor_device(void)
+{
+    
+	const struct device *const dev = DEVICE_DT_GET(DT_ALIAS(baro2));
+
+	if (!device_is_ready(dev)) {
+		printk("\nError: Device \"%s\" is not ready; "
+		       "check the driver initialization logs for errors.\n",
+		       dev->name);
+		return NULL;
+	}
+
+	printk("Found device \"%s\", getting sensor data\n", dev->name);
+	return dev;
+}
 
 int main(void)
 {
-    const struct device *accel = DEVICE_DT_GET(DT_ALIAS(accel0));
-    const struct device *gyro  = DEVICE_DT_GET(DT_ALIAS(gyro0));
+	const struct device *dev = get_pressure_sensor_device();
 
-    if (!device_is_ready(accel)) {
-        printk("Accel not ready (check DT node, properties, status, Kconfig)\n");
-    }
-    if (!device_is_ready(gyro)) {
-        printk("Gyro not ready (check DT node, properties, status, Kconfig)\n");
-    }
-    if (!device_is_ready(accel) || !device_is_ready(gyro)) {
-        return -1;
-    }
+	if (dev == NULL) {
+		return 0;
+	}
+	struct sensor_value pressure;
+	struct sensor_value temperature;
 
-    printk("Polling BMI088 (no interrupts)...\n");
+	printk("Starting pressure, temperature and altitude polling sample.\n");
 
-    while (1) {
-        if (sensor_sample_fetch(accel) == 0) {
-            struct sensor_value ax, ay, az;
-            sensor_channel_get(accel, SENSOR_CHAN_ACCEL_X, &ax);
-            sensor_channel_get(accel, SENSOR_CHAN_ACCEL_Y, &ay);
-            sensor_channel_get(accel, SENSOR_CHAN_ACCEL_Z, &az);
-            printk("ACCEL X=%d.%06d Y=%d.%06d Z=%d.%06d g\n",
-                   ax.val1, ax.val2, ay.val1, ay.val2, az.val1, az.val2);
-        } else {
-            printk("Accel fetch error\n");
-        }
+	while (1) {
+		if (sensor_sample_fetch_chan(dev, SENSOR_CHAN_ALL) == 0) {
+			sensor_channel_get(dev, SENSOR_CHAN_PRESS, &pressure);
+			sensor_channel_get(dev, SENSOR_CHAN_AMBIENT_TEMP, &temperature);
 
-        if (sensor_sample_fetch(gyro) == 0) {
-            struct sensor_value gx, gy, gz;
-            sensor_channel_get(gyro, SENSOR_CHAN_GYRO_X, &gx);
-            sensor_channel_get(gyro, SENSOR_CHAN_GYRO_Y, &gy);
-            sensor_channel_get(gyro, SENSOR_CHAN_GYRO_Z, &gz);
-            printk("GYRO  X=%d.%06d Y=%d.%06d Z=%d.%06d rad/s\n",
-                   gx.val1, gx.val2, gy.val1, gy.val2, gz.val1, gz.val2);
-        } else {
-            printk("Gyro fetch error\n");
-        }
+			printk("temp %.2f Cel, pressure %f mPa",
+			       sensor_value_to_double(&temperature),
+			       sensor_value_to_double(&pressure));
 
-        k_msleep(10); /* Adjust: 10 ms ≈ 100 Hz effective read rate */
-    }
-    return 0;
+			printk("\n");
+		}
+
+		k_msleep(1000);
+	}
+	return 0;
 }
