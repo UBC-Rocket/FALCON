@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.20.0)
 
 set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 
+set(ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
 # Compatible boards for this app
 set(COMPATIBLE_BOARDS
     ubcrocket_fc_2526_r1
