@@ -11,7 +11,7 @@
 static const struct device *get_pressure_sensor_device(void)
 {
     
-	const struct device *const dev = DEVICE_DT_GET(DT_ALIAS(baro2));
+	const struct device *const dev = DEVICE_DT_GET(DT_ALIAS(baro0));
 
 	if (!device_is_ready(dev)) {
 		printk("\nError: Device \"%s\" is not ready; "

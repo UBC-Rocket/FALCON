@@ -16,37 +16,35 @@
 		zephyr,code-partition = &slot0_partition;
 	};
 
-    leds: leds {
+    leds {
 		compatible = "gpio-leds";
 
-		green_led_1: led_0 {
+		green_led: green-led {
 			gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
-			label = "User LED0";
+			label = "Green LED";
 		};
 
-        red_led_1: led_1 {
+        red_led: red-led {
 			gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
-			label = "User LD1";
+			label = "Red LED";
 		};
 	};
 
     
 
 	aliases {
-        led0 = &green_led_1;
-        led1 = &red_led_1;
-        accel0 = &bmi088_accel;
-        gyro0 = &bmi088_gyro;
-        //imu0 = &bno085;
-        baro1 = &ms5611;
-        baro2 = &ms5607;
+        led0 = &green_led;
+        led1 = &red_led;
+        accel0 = &accel0;
+        gyro0 = &gyro0;
+        baro0 = &baro0;
+        baro1 = &baro1;
     };
 };
 
-// Enable and configure SPI2 with BMI088 sensors
+// Enable and configure SPI2
 &spi2 {
     status = "okay";
-    //clocks = <&rcc STM32_CLOCK(APB1, 14)>, <&rcc STM32_SRC_HSI SPI2_SEL(0)>;
     pinctrl-0 = <&spi2_sck_pb10 &spi2_mosi_pc1 &spi2_miso_pc2>;
     pinctrl-names = "default";
 
@@ -54,7 +52,7 @@
     cs-gpios = <&gpiod 15 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>, <&gpioc 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>, <&gpiod 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
     // BMI088 Accelerometer
-    bmi088_accel: bmi088-accel@0 {
+    accel0: bmi088-accel@0 {
         status = "disabled";
         compatible = "bosch,bmi08x-accel";
         reg = <0>;
@@ -70,7 +68,7 @@
     };
 
     // BMI088 Gyroscope
-    bmi088_gyro: bmi088-gyro@1 {
+    gyro0: bmi088-gyro@1 {
         status = "disabled";
         compatible = "bosch,bmi08x-gyro";
         reg = <1>;
@@ -86,7 +84,7 @@
     };
 
     //MS5611 Barometer (same driver as ms5607)
-    ms5611: ms5611@2 {
+    baro0: ms5611@2 {
         status = "okay";
         compatible = "meas,ms5607";
         reg = <2>;
@@ -94,13 +92,14 @@
     };
 };
 
+// Enable and configure SPI4
 &spi4 {
     status = "okay";
     pinctrl-0 = <&spi4_sck_pe12 &spi4_mosi_pe6 &spi4_miso_pe5>;
     pinctrl-names = "default";
     cs-gpios = <&gpiod 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>, <&gpioe 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
     
-    ms5607: ms5607@1 {
+    baro1: ms5607@1 {
         status = "okay";
         compatible = "meas,ms5607";
         reg = <1>;
