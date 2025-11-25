@@ -7,3 +7,7 @@
    - Build the application: `west build blinkytest -b ubcrocket_fc_2526_r1 -p`
 6. Connect the board to your computer and flash it: `west flash`
 7. For a nice UI based developer experience, use VS Code with the 'Zephyr IDE Extension Pack' extension
+
+## Knowledge
+- Zephyr Documentation: https://docs.zephyrproject.org/latest/index.html
+- Highly recommend watching this tutorial series (Videos 9, 10, and 11 shouldnt be necessary for this project): https://www.youtube.com/playlist?list=PLEBQazB0HUyTmK2zdwhaf8bLwuEaDH-52
