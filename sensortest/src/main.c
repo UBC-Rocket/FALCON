@@ -64,7 +64,7 @@ int main(void)
                 sensor_channel_get(baro_dev, SENSOR_CHAN_PRESS, &pressure);
                 sensor_channel_get(baro_dev, SENSOR_CHAN_AMBIENT_TEMP, &temperature);
 
-                LOG_INF("Barometer: %.2f mPa, Temperature: %.2f degC",
+                LOG_INF("Pressure: %.2f mPa, Temperature: %.2f degC",
                         sensor_value_to_double(&pressure),
                         sensor_value_to_double(&temperature));
             } else {
