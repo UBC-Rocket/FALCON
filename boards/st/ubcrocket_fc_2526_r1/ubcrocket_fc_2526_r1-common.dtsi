@@ -36,13 +36,24 @@
 // 	status = "okay";
 // };
 
+//old pll settings
+// &pll {
+// 	clocks = <&clk_hsi>;
+//     div-m = <4>;
+//     mul-n = <30>;
+//     div-p = <2>;   // 240 MHz SYSCLK (P)
+//     div-q = <5>;   // 96 MHz (optional use)
+//     div-r = <2>;   // 240 MHz (alternate)
+//     status = "okay";
+// };
+
 &pll {
 	clocks = <&clk_hsi>;
     div-m = <4>;
-    mul-n = <30>;
-    div-p = <2>;   // 240 MHz SYSCLK (P)
-    div-q = <5>;   // 96 MHz (optional use)
-    div-r = <2>;   // 240 MHz (alternate)
+    mul-n = <9>;
+    div-p = <2>;
+    div-q = <3>; 
+    div-r = <2>; 
     status = "okay";
 };
 
@@ -59,12 +70,21 @@
 // 	status = "okay";
 // };
 
+//old rcc settings
+// &rcc {
+// 	clocks = <&pll>;
+// 	clock-frequency = <DT_FREQ_M(240)>;
+// 	ahb-prescaler = <1>; //2
+// 	apb1-prescaler = <1>;
+// 	apb2-prescaler = <1>; //2
+// 	apb3-prescaler = <1>;
+// };
 &rcc {
-	clocks = <&pll>;
-	clock-frequency = <DT_FREQ_M(240)>;
+	clocks = <&clk_hsi>;
+	clock-frequency = <DT_FREQ_M(64)>;
 	ahb-prescaler = <1>; //2
 	apb1-prescaler = <1>;
-	apb2-prescaler = <1>; //2
+	apb2-prescaler = <2>; //2
 	apb3-prescaler = <1>;
 };
 

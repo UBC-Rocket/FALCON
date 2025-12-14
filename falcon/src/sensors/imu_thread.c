@@ -24,7 +24,6 @@ static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3) {
 
     // Retrieve the sleep time passed as a parameter
     uint32_t sleep_time_ms = *(uint32_t *)sleep_time_ptr;
-    LOG_INF("IMU thread received sleep time: %d ms", sleep_time_ms);
 
     while (1) {
         struct sensor_value accel[3];

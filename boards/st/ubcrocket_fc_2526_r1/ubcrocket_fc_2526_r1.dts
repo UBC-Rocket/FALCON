@@ -106,3 +106,12 @@
         spi-max-frequency = <10000000>;
     };
 };
+
+// Enable and configure SDMMC1
+&sdmmc1 {
+    status = "okay";
+    disk-name = "SDMMC";
+    bus-width = <4>;
+    pinctrl-0 = <&sdmmc1_ck_pc12 &sdmmc1_cmd_pb2 &sdmmc1_d0_pb13 &sdmmc1_d1_pc9 &sdmmc1_d2_pc10 &sdmmc1_d3_pc11>;
+    pinctrl-names = "default";
+};
