@@ -3,24 +3,29 @@
 #include <zephyr/storage/disk_access.h>
 #include <zephyr/fs/fs.h>
 #include <zephyr/logging/log.h>
+#include <ff.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
-// Mount point for the SD card
-#define MOUNT_POINT "/SDCARD"
+#define SDMMC_NODE DT_NODELABEL(sdmmc1)
+#define DISK_DRIVE_NAME DT_PROP(SDMMC_NODE, disk_name)
+#define MOUNT_POINT "/" DISK_DRIVE_NAME ":"
 
-// FATFS mount structure
+static FATFS fat_fs;
+
 static struct fs_mount_t fatfs_mnt = {
     .type = FS_FATFS,
     .mnt_point = MOUNT_POINT,
+    .fs_data = &fat_fs
 };
 
 void write_test_log(void) {
     struct fs_file_t file;
     int ret;
+    fs_file_t_init(&file);
 
     // Open or create a file for writing
-    ret = fs_open(&file, MOUNT_POINT "/test_log.txt", FS_O_CREATE | FS_O_WRITE);
+    ret = fs_open(&file, MOUNT_POINT "/log.txt", FS_O_CREATE |FS_O_WRITE);
     if (ret) {
         LOG_ERR("Failed to open file: %d", ret);
         return;
@@ -43,11 +48,13 @@ void mount_sd_card(void) {
     int ret;
 
     // Initialize the SDMMC disk
-    ret = disk_access_init("SDMMC");
-    if (ret) {
+    // ret = disk_access_init("SDMMC");
+    ret = disk_access_ioctl(DISK_DRIVE_NAME, DISK_IOCTL_CTRL_INIT, NULL);
+    if (ret < 0) {
         LOG_ERR("Disk access initialization failed: %d", ret);
         return;
     }
+    LOG_INF("init return code: %d", ret);
 
     // Mount the FATFS file system
     ret = fs_mount(&fatfs_mnt);
@@ -66,6 +73,12 @@ int main(void) {
 
     // Write a test log to the SD card
     write_test_log();
+
+    int res = fs_unmount(&fatfs_mnt);
+		if (res != 0) {
+			printk("Error unmounting disk\n");
+			return res;
+		}
 
     return 0;
 }
