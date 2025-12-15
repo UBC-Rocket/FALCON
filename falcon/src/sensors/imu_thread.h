@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-void start_imu_thread(uint32_t sleep_time_ms);
+void start_imu_thread(uint32_t *sleep_time_ms);
 
 #endif

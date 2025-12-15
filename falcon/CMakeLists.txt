@@ -22,4 +22,4 @@ endif()
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(falcon)
 
-target_sources(app PRIVATE src/main.c src/data.c src/sensors/imu_thread.c)
+target_sources(app PRIVATE src/main.c src/data.c src/sensors/imu_thread.c src/logger_thread.c)

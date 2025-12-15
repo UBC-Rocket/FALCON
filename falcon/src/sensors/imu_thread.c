@@ -13,7 +13,8 @@ LOG_MODULE_REGISTER(imu_thread, LOG_LEVEL_INF);
 K_THREAD_STACK_DEFINE(imu_stack, IMU_THREAD_STACK);
 static struct k_thread imu_thread;
 
-static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3) {
+static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3)
+{
     const struct device *gyro_dev = DEVICE_DT_GET(DT_ALIAS(gyro0));
     const struct device *accel_dev = DEVICE_DT_GET(DT_ALIAS(accel0));
 
@@ -61,7 +62,8 @@ static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3) {
     }
 }
 
-void start_imu_thread(uint32_t *sleep_time_ms) {
+void start_imu_thread(uint32_t *sleep_time_ms)
+{
     k_thread_create(
         &imu_thread,
         imu_stack,
