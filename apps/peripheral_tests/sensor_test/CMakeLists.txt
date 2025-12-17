@@ -2,9 +2,9 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
-set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
+set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../..)
 
-set(ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set(ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_LIST_DIR}/../../..)
 
 # Compatible boards for this app
 set(COMPATIBLE_BOARDS
@@ -20,6 +20,6 @@ if(NOT BOARD IN_LIST COMPATIBLE_BOARDS)
 endif()
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(sdtest)
+project(senso_test)
 
 target_sources(app PRIVATE src/main.c)
