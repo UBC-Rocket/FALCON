@@ -52,6 +52,30 @@ static int mount_sd_card(void) {
     return ret;
 }
 
+static int write_csv_header(void) {
+    const char *header = "Log_Timestamp(ms),"
+                         "IMU_Timestamp(ms),Accel_X(m/s^2),Accel_Y(m/s^2),Accel_Z(m/s^2),"
+                         "Gyro_X(rad/s),Gyro_Y(rad/s),Gyro_Z(rad/s),"
+                         "Baro_Timestamp(ms),Pressure(hPa),Temperature(C),Altitude(m)\n";
+    int ret;
+
+    // Write the header row to the log file
+    ret = fs_write(&log_file, header, strlen(header));
+    if (ret < 0) {
+        LOG_ERR("Failed to write header to log file: %d", ret);
+        return ret;
+    }
+
+    // Flush the header to the SD card
+    ret = fs_sync(&log_file);
+    if (ret < 0) {
+        LOG_ERR("Failed to sync log file after writing header: %d", ret);
+        return ret;
+    }
+
+    return 0;
+}
+
 static int create_new_log_file(void) {
     int ret;
     struct fs_dir_t dir;
@@ -89,21 +113,50 @@ static int create_new_log_file(void) {
     }
 
     LOG_INF("Log file created: %s", log_file_name);
+
+    // Attempt to write the header row to the log file
+    ret = write_csv_header();
+    if (ret < 0) {
+        LOG_ERR("Failed to write header to log file. Continuing without header.");
+        // Do not close the file; allow further writes to continue
+    }
+
     return 0;
 }
 
+static int format_log_entry(const struct log_frame *frame, char *buffer, size_t buffer_size) {
+    return snprintf(buffer, buffer_size,
+                    "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,%.3f,%.3f,%.3f\n",
+                    frame->log_timestamp,
+                    frame->imu.timestamp, // IMU timestamp
+                    (double)frame->imu.accel[0],
+                    (double)frame->imu.accel[1],
+                    (double)frame->imu.accel[2],
+                    (double)frame->imu.gyro[0],
+                    (double)frame->imu.gyro[1],
+                    (double)frame->imu.gyro[2],
+                    frame->baro.timestamp, // Barometer timestamp
+                    (double)frame->baro.pressure,
+                    (double)frame->baro.temperature,
+                    (double)frame->baro.altitude);
+}
+
 static void write_log_frame_to_file(const struct log_frame *frame) {
-    char log_entry[64];
+    char log_entry[128];
     int len;
 
     // Format the log entry as CSV
-    len = snprintf(log_entry, sizeof(log_entry),
-                   "%lld,%.3f,%.3f,%.3f,%.3f\n",
-                   frame->log_timestamp,
-                   (double)frame->imu.accel[0],
-                   (double)frame->imu.accel[1],
-                   (double)frame->imu.accel[2],
-                   (double)frame->baro.pressure);
+    len = format_log_entry(frame, log_entry, sizeof(log_entry));
+
+    // Check if the formatted string was truncated
+    if (len >= sizeof(log_entry)) {
+        LOG_ERR("Log buffer size: %zu, Required size: %d", sizeof(log_entry), len);
+        len = sizeof(log_entry) - 1; // Write only up to the buffer size (excluding null terminator)
+        return; // Abort to avoid writing incomplete log entry
+    } else if (len < 0) {
+        LOG_ERR("Failed to format log entry: %d", len);
+        return; // Abort if formatting failed
+    }
 
     // Write the log entry to the file
     int ret = fs_write(&log_file, log_entry, len);
