@@ -11,13 +11,31 @@ struct imu_data
     int64_t timestamp; // Timestamp in milliseconds
 };
 
+// Per-barometer sensor data
+struct baro_sensor_data
+{
+    float pressure;     // Pressure in Pa
+    float temperature;  // Temperature in °C
+    float altitude;     // Altitude in meters (from pressure + temp)
+    float nis;          // Normalized innovation squared
+    uint8_t faults;     // Accumulated fault count
+    bool healthy;       // Health status (accepted/rejected)
+};
+
+// Combined barometer data (shared with other threads)
 struct baro_data
 {
-    float pressure;    // Pressure in hPa (same as mBar)
-    float temperature; // Temperature in °C
-    float altitude;    // Altitude in meters
-    int64_t timestamp; // Timestamp in milliseconds
+    struct baro_sensor_data baro0;  // Barometer 0
+    struct baro_sensor_data baro1;  // Barometer 1
+
+    float altitude;           // Kalman-filtered altitude estimate in meters
+    float alt_variance;      // Kalman filter variance (P)
+    float velocity;           // Vertical velocity estimate (m/s)
+    float vel_variance;      // Velocity variance (P11)
+
+    int64_t timestamp;        // Timestamp in milliseconds
 };
+
 
 // Global instances
 extern struct imu_data g_imu_data;

@@ -9,11 +9,12 @@ LOG_MODULE_REGISTER(imu_thread, LOG_LEVEL_INF);
 
 #define IMU_THREAD_STACK 2048
 #define IMU_THREAD_PRIORITY 5
+#define IMU_THREAD_PERIOD_MS 50
 
 K_THREAD_STACK_DEFINE(imu_stack, IMU_THREAD_STACK);
 static struct k_thread imu_thread;
 
-static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3)
+static void imu_thread_fn(void *p1, void *p2, void *p3)
 {
     const struct device *gyro_dev = DEVICE_DT_GET(DT_ALIAS(gyro0));
     const struct device *accel_dev = DEVICE_DT_GET(DT_ALIAS(accel0));
@@ -23,9 +24,6 @@ static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3)
         return;
     }
 
-    // Retrieve the sleep time passed as a parameter
-    uint32_t sleep_time_ms = *(uint32_t *)sleep_time_ptr;
-
     while (1) {
         struct sensor_value accel[3];
         struct sensor_value gyro[3];
@@ -34,7 +32,7 @@ static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3)
         if (sensor_sample_fetch(accel_dev) < 0 ||
             sensor_sample_fetch(gyro_dev) < 0) {
             LOG_ERR("Failed to fetch samples from BMI088");
-            k_sleep(K_MSEC(sleep_time_ms));
+            k_sleep(K_MSEC(IMU_THREAD_PERIOD_MS));
             continue;
         }
 
@@ -58,18 +56,18 @@ static void imu_thread_fn(void *sleep_time_ptr, void *p2, void *p3)
 
         set_imu_data(&imu_sample);
 
-        k_sleep(K_MSEC(sleep_time_ms));
+        k_sleep(K_MSEC(IMU_THREAD_PERIOD_MS));
     }
 }
 
-void start_imu_thread(uint32_t *sleep_time_ms)
+void start_imu_thread(void)
 {
     k_thread_create(
         &imu_thread,
         imu_stack,
         K_THREAD_STACK_SIZEOF(imu_stack),
         imu_thread_fn,
-        sleep_time_ms, NULL, NULL,  // Pass sleep time as a parameter
+        NULL, NULL, NULL,
         IMU_THREAD_PRIORITY,
         0,
         K_NO_WAIT

@@ -12,7 +12,8 @@ LOG_MODULE_REGISTER(logger_thread, LOG_LEVEL_INF);
 
 #define LOGGER_THREAD_STACK_SIZE 2048
 #define LOGGER_THREAD_PRIORITY   7
-#define LOGGER_THREAD_PERIOD_MS  1000
+#define LOGGER_THREAD_PERIOD_MS  50
+#define LOGGER_SYNC_PERIOD_MS    500
 
 #define SDMMC_NODE DT_NODELABEL(sdmmc1)
 #define DISK_DRIVE_NAME DT_PROP(SDMMC_NODE, disk_name)
@@ -56,7 +57,10 @@ static int write_csv_header(void) {
     const char *header = "Log_Timestamp(ms),"
                          "IMU_Timestamp(ms),Accel_X(m/s^2),Accel_Y(m/s^2),Accel_Z(m/s^2),"
                          "Gyro_X(rad/s),Gyro_Y(rad/s),Gyro_Z(rad/s),"
-                         "Baro_Timestamp(ms),Pressure(hPa),Temperature(C),Altitude(m)\n";
+                         "Baro_Timestamp(ms),"
+                         "Baro0_Pressure(Pa),Baro0_Temperature(C),Baro0_Altitude(m),Baro0_NIS,Baro0_Faults,Baro0_Healthy,"
+                         "Baro1_Pressure(Pa),Baro1_Temperature(C),Baro1_Altitude(m),Baro1_NIS,Baro1_Faults,Baro1_Healthy,"
+                         "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar\n";
     int ret;
 
     // Write the header row to the log file
@@ -100,7 +104,7 @@ static int create_new_log_file(void) {
     fs_closedir(&dir);
 
     // Generate a new log file name
-    snprintf(log_file_name, sizeof(log_file_name), MOUNT_POINT "/log_%d.txt", file_count);
+    snprintf(log_file_name, sizeof(log_file_name), MOUNT_POINT "/log_%d.csv", file_count);
 
     // Initialize the file
     fs_file_t_init(&log_file);
@@ -126,7 +130,10 @@ static int create_new_log_file(void) {
 
 static int format_log_entry(const struct log_frame *frame, char *buffer, size_t buffer_size) {
     return snprintf(buffer, buffer_size,
-                    "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,%.3f,%.3f,%.3f\n",
+                    "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
+                    "%.3f,%.3f,%.3f,%.3f,%u,%d,"
+                    "%.3f,%.3f,%.3f,%.3f,%u,%d,"
+                    "%.3f,%.3f,%.3f,%.3f\n",
                     frame->log_timestamp,
                     frame->imu.timestamp, // IMU timestamp
                     (double)frame->imu.accel[0],
@@ -136,13 +143,26 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
                     (double)frame->imu.gyro[1],
                     (double)frame->imu.gyro[2],
                     frame->baro.timestamp, // Barometer timestamp
-                    (double)frame->baro.pressure,
-                    (double)frame->baro.temperature,
-                    (double)frame->baro.altitude);
+                    (double)frame->baro.baro0.pressure,
+                    (double)frame->baro.baro0.temperature,
+                    (double)frame->baro.baro0.altitude,
+                    (double)frame->baro.baro0.nis,
+                    (unsigned int)frame->baro.baro0.faults,
+                    frame->baro.baro0.healthy ? 1 : 0,
+                    (double)frame->baro.baro1.pressure,
+                    (double)frame->baro.baro1.temperature,
+                    (double)frame->baro.baro1.altitude,
+                    (double)frame->baro.baro1.nis,
+                    (unsigned int)frame->baro.baro1.faults,
+                    frame->baro.baro1.healthy ? 1 : 0,
+                    (double)frame->baro.altitude,
+                    (double)frame->baro.alt_variance,
+                    (double)frame->baro.velocity,
+                    (double)frame->baro.vel_variance);
 }
 
 static void write_log_frame_to_file(const struct log_frame *frame) {
-    char log_entry[128];
+    char log_entry[512];
     int len;
 
     // Format the log entry as CSV
@@ -164,12 +184,6 @@ static void write_log_frame_to_file(const struct log_frame *frame) {
         LOG_ERR("Failed to write to log file: %d", ret);
         return;
     }
-
-    // Flush the data to the SD card
-    ret = fs_sync(&log_file);
-    if (ret < 0) {
-        LOG_ERR("Failed to sync log file: %d", ret);
-    }
 }
 
 static void logger_thread_fn(void *p1, void *p2, void *p3) {
@@ -183,6 +197,8 @@ static void logger_thread_fn(void *p1, void *p2, void *p3) {
         return;
     }
 
+    int64_t last_sync_ms = k_uptime_get();
+
     while (1) {
         // Collect data
         frame.log_timestamp = k_uptime_get();
@@ -191,6 +207,15 @@ static void logger_thread_fn(void *p1, void *p2, void *p3) {
 
         // Write the data to the log file
         write_log_frame_to_file(&frame);
+
+        if ((frame.log_timestamp - last_sync_ms) >= LOGGER_SYNC_PERIOD_MS) {
+            int ret = fs_sync(&log_file);
+            if (ret < 0) {
+                LOG_ERR("Failed to sync log file: %d", ret);
+            } else {
+                last_sync_ms = frame.log_timestamp;
+            }
+        }
 
         k_sleep(K_MSEC(LOGGER_THREAD_PERIOD_MS));
     }
