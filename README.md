@@ -20,12 +20,12 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
 4. Install `west` in the virtual environment: `pip install west`
 5. Installed the required Python packages for Zephyr: `west packages pip --install` (Note that we are **no longer** using `uvx west`)
 6. Install the Zephyr SDK: `west sdk install`
-7. Navigate into the FALCON module/folder: `cd falcon`
-8. Build the application (blinkytest, or sensortest, etc.):  
+7. Build the application (blinkytest, or sensortest, etc.):  
    - Select a board, either a custom board from this repo's '/boards' folder (check the applications CMakeLists.txt for official board compatibility), or from Zephyrs official supported boards: https://zephyr-docs.listenai.com/boards/index.html
    - Build the application: `west build blinkytest -b ubcrocket_fc_2526_r1 -p`
-9. Connect the board to your computer and flash it: `west flash`
-10. For a nice UI based developer experience, use VS Code with the 'Zephyr IDE Extension Pack' extension
+8. Connect the board to your computer and flash it: `west flash`
+
+For a nice UI based developer experience, use VS Code with the 'Zephyr IDE Extension Pack' extension
 
 ## Zephyr VSCode Setup
 TODO
