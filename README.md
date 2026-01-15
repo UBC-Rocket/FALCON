@@ -5,12 +5,7 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
 
 1. (MacOS users only) Install Homebrew if you haven't already: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 2. Install Python 3.10 or higher and Git if you haven't already.
-3. Install a package runner for Python, such as `pipx` or `uvx`. uv is the official python package manager supported by UBCRocket, and is recommended.  
-  `sudo apt install uv` (Ubuntu/Debian)  
-  `sudo dnf install uv` (Fedora)  
-  `sudo pacman -S uv` (Arch)  
-  `nix-env -iA nixpkgs.uv` (Nix)  
-  `brew install uv` (MacOS/Homebrew)  
+3. Install a package runner for Python, such as `pipx` or `uvx`. uv is the official python package manager supported by UBCRocket, and is recommended. Follow there [instructions on the uv website](https://docs.astral.sh/uv/getting-started/installation/) to get started.
 4. Clone the FALCON repository with west: `uvx west init -m git@github.com:UBC-Rocket/FALCON.git FALCON`
 5. Navigate into the created folder and run `uvx west update`: `cd FALCON && uvx west update`
 
