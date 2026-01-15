@@ -6,7 +6,7 @@
 #include "sensors/imu_thread.h"
 #include "sensors/baro_thread.h"
 #include "logger_thread.h"
-#include "state_machine.h"
+#include "state_machine/state_machine.h"
 #include "data.h"
 
 LOG_MODULE_REGISTER(falcon_main, LOG_LEVEL_INF);
