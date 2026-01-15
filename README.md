@@ -15,7 +15,7 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
    - Make sure to install `cmake`, `ninja`, `dtc`, `gcc-arm-none-eabi` (or other toolchain depending on your board), `openocd`, and `pyocd`
 2. Navigate into the FALCON folder if not already: `cd FALCON`
 3. Create and activate a python virtual environment:
-   - `uv venv`
+   - `uv venv --seed` (The `seed` flag is important!)
    - `source .venv/bin/activate` (MacOS/Linux) or `.venv\Scripts\activate.bat` (Windows)
 4. Install `west` in the virtual environment: `pip install west`
 5. Installed the required Python packages for Zephyr: `west packages pip --install` (Note that we are **no longer** using `uvx west`)
