@@ -6,13 +6,13 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
 1. (MacOS users only) Install Homebrew if you haven't already: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 2. Install Python 3.10 or higher and Git if you haven't already.
 3. Install a package runner for Python, such as `pipx` or `uvx`. uv is the official python package manager supported by UBCRocket, and is recommended.  
-- `sudo apt install uv` (Ubuntu/Debian)
-- `sudo dnf install uv` (Fedora)
-- `sudo pacman -S uv` (Arch)
-- `nix-env -iA nixpkgs.uv` (Nix)
-- `brew install uv` (MacOS/Homebrew)
-1. Clone the FALCON repository with west: `uvx west init -m git@github.com:UBC-Rocket/FALCON.git FALCON`
-2. Navigate into the created folder and run `uvx west update`: `cd FALCON && uvx west update`
+  `sudo apt install uv` (Ubuntu/Debian)  
+  `sudo dnf install uv` (Fedora)  
+  `sudo pacman -S uv` (Arch)  
+  `nix-env -iA nixpkgs.uv` (Nix)  
+  `brew install uv` (MacOS/Homebrew)  
+4. Clone the FALCON repository with west: `uvx west init -m git@github.com:UBC-Rocket/FALCON.git FALCON`
+5. Navigate into the created folder and run `uvx west update`: `cd FALCON && uvx west update`
 
 ## Development Setup
 1. Install the required packages for Zephyr development:
@@ -26,7 +26,7 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
 5. Installed the required Python packages for Zephyr: `west packages pip --install` (Note that we are **no longer** using `uvx west`)
 6. Install the Zephyr SDK: `west sdk install`
 7. Navigate into the FALCON module/folder: `cd falcon`
-8. . Build the application (blinkytest, or sensortest, etc.): </br>
+8. Build the application (blinkytest, or sensortest, etc.):  
    - Select a board, either a custom board from this repo's '/boards' folder (check the applications CMakeLists.txt for official board compatibility), or from Zephyrs official supported boards: https://zephyr-docs.listenai.com/boards/index.html
    - Build the application: `west build blinkytest -b ubcrocket_fc_2526_r1 -p`
 9. Connect the board to your computer and flash it: `west flash`
