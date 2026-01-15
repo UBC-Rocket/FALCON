@@ -1,14 +1,39 @@
-## Initial Setup
-1. This is a zephyr module that contains an application. To set up your Zephyr workspace, follow this tutorial: https://docs.zephyrproject.org/latest/develop/getting_started/index.html
-2. Once your workspace is set up (i.e. zephyrproject, or whatever you named it), cd into it and clone it: `cd zephyrproject`, `git clone https://...`
-3. Activate the venv if not already: macOS `source .venv/bin/activate`, windows depends on your shell, look it up.
-   - You will active the venv every time to build from the CLI
-4. Navigate into the FALCON module/folder: `cd falcon`
-5. . Build the applicaton (blinkytest, or sensortest, etc.): </br>
+## Initial Repo Setup
+> Instructions to set up the FALCON workspace are designed for **Linux and MacOS**! Due to an upstream incompatibility with Windows and Zephyr, Windows users may face significant challenges. It is recommended to use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) if you are on Windows.
+
+FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zephyrproject.org/latest/guides/west/index.html). As such, **do not clone this repo directly** (although it will still work with some additional manual setup). Instead, follow these steps:
+
+1. (MacOS users only) Install Homebrew if you haven't already: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+2. Install Python 3.10 or higher and Git if you haven't already.
+3. Install a package runner for Python, such as `pipx` or `uvx`. uv is the official python package manager supported by UBCRocket, and is recommended.  
+- `sudo apt install uv` (Ubuntu/Debian)
+- `sudo dnf install uv` (Fedora)
+- `sudo pacman -S uv` (Arch)
+- `nix-env -iA nixpkgs.uv` (Nix)
+- `brew install uv` (MacOS/Homebrew)
+1. Clone the FALCON repository with west: `uvx west init -m git@github.com:UBC-Rocket/FALCON.git FALCON`
+2. Navigate into the created folder and run `uvx west update`: `cd FALCON && uvx west update`
+
+## Development Setup
+1. Install the required packages for Zephyr development:
+   - Follow the `Install dependencies` instructions here (don't follow the rest of the instructions): https://docs.zephyrproject.org/latest/develop/getting_started/index.html#installing-prerequisites
+   - Make sure to install `cmake`, `ninja`, `dtc`, `gcc-arm-none-eabi` (or other toolchain depending on your board), `openocd`, and `pyocd`
+2. Navigate into the FALCON folder if not already: `cd FALCON`
+3. Create and activate a python virtual environment:
+   - `uv venv`
+   - `source .venv/bin/activate` (MacOS/Linux) or `.venv\Scripts\activate.bat` (Windows)
+4. Install `west` in the virtual environment: `pip install west`
+5. Installed the required Python packages for Zephyr: `west packages pip --install` (Note that we are **no longer** using `uvx west`)
+6. Install the Zephyr SDK: `west sdk install`
+7. Navigate into the FALCON module/folder: `cd falcon`
+8. . Build the application (blinkytest, or sensortest, etc.): </br>
    - Select a board, either a custom board from this repo's '/boards' folder (check the applications CMakeLists.txt for official board compatibility), or from Zephyrs official supported boards: https://zephyr-docs.listenai.com/boards/index.html
    - Build the application: `west build blinkytest -b ubcrocket_fc_2526_r1 -p`
-6. Connect the board to your computer and flash it: `west flash`
-7. For a nice UI based developer experience, use VS Code with the 'Zephyr IDE Extension Pack' extension
+9. Connect the board to your computer and flash it: `west flash`
+10. For a nice UI based developer experience, use VS Code with the 'Zephyr IDE Extension Pack' extension
+
+## Zephyr VSCode Setup
+TODO
 
 ## Knowledge
 - Zephyr Documentation: https://docs.zephyrproject.org/latest/index.html
