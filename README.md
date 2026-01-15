@@ -7,7 +7,7 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
 2. Install Python 3.10 or higher and Git if you haven't already.
 3. Install a package runner for Python, such as `pipx` or `uvx`. uv is the official python package manager supported by UBCRocket, and is recommended. Follow there [instructions on the uv website](https://docs.astral.sh/uv/getting-started/installation/) to get started.
 4. Clone the FALCON repository with west: `uvx west init -m git@github.com:UBC-Rocket/FALCON.git FALCON`
-5. Navigate into the created folder and run `uvx west update`: `cd FALCON && uvx west update`
+5. Navigate into the created folder and run `uvx west update`: `cd FALCON && uvx west update` (this might take a while)
 
 ## Development Setup
 1. Install the required packages for Zephyr development:
