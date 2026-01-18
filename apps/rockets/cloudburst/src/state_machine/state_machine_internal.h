@@ -38,7 +38,7 @@ struct flight_sm
     repeated_check_t drogue_main_check;
     repeated_check_t landed_check;
     int64_t last_landed_check_ms;
-    bool drogue_fired;
+    bool drogue_fire_triggered;
 };
 
 bool repeated_check_update(repeated_check_t *check, bool condition, uint8_t required);
