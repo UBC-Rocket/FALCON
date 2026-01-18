@@ -7,10 +7,12 @@ LOG_MODULE_REGISTER(data, LOG_LEVEL_INF);
 // Global instances
 struct imu_data g_imu_data;
 struct baro_data g_baro_data;
+struct state_data g_state_data;
 
 // Mutexes for thread safety
 K_MUTEX_DEFINE(imu_mutex);
 K_MUTEX_DEFINE(baro_mutex);
+K_MUTEX_DEFINE(state_mutex);
 
 // Setter functions
 void set_imu_data(const struct imu_data *src)
@@ -40,4 +42,18 @@ void get_baro_data(struct baro_data *dst)
     k_mutex_lock(&baro_mutex, K_FOREVER);
     *dst = g_baro_data;
     k_mutex_unlock(&baro_mutex);
+}
+
+void set_state_data(const struct state_data *src)
+{
+    k_mutex_lock(&state_mutex, K_FOREVER);
+    g_state_data = *src;
+    k_mutex_unlock(&state_mutex);
+}
+
+void get_state_data(struct state_data *dst)
+{
+    k_mutex_lock(&state_mutex, K_FOREVER);
+    *dst = g_state_data;
+    k_mutex_unlock(&state_mutex);
 }

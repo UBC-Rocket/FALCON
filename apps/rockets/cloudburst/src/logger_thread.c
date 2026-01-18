@@ -60,7 +60,8 @@ static int write_csv_header(void) {
                          "Baro_Timestamp(ms),"
                          "Baro0_Pressure(Pa),Baro0_Temperature(C),Baro0_Altitude(m),Baro0_NIS,Baro0_Faults,Baro0_Healthy,"
                          "Baro1_Pressure(Pa),Baro1_Temperature(C),Baro1_Altitude(m),Baro1_NIS,Baro1_Faults,Baro1_Healthy,"
-                         "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar\n";
+                         "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar,"
+                         "State,State_Ground_Altitude(m),State_Timestamp(ms)\n";
     int ret;
 
     // Write the header row to the log file
@@ -133,7 +134,7 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
                     "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
                     "%.3f,%.3f,%.3f,%.3f,%u,%d,"
                     "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-                    "%.3f,%.3f,%.3f,%.3f\n",
+                    "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld\n",
                     frame->log_timestamp,
                     frame->imu.timestamp, // IMU timestamp
                     (double)frame->imu.accel[0],
@@ -158,7 +159,10 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
                     (double)frame->baro.altitude,
                     (double)frame->baro.alt_variance,
                     (double)frame->baro.velocity,
-                    (double)frame->baro.vel_variance);
+                    (double)frame->baro.vel_variance,
+                    (int)frame->state.state,
+                    (double)frame->state.ground_altitude,
+                    frame->state.timestamp);
 }
 
 static void write_log_frame_to_file(const struct log_frame *frame) {
@@ -204,6 +208,7 @@ static void logger_thread_fn(void *p1, void *p2, void *p3) {
         frame.log_timestamp = k_uptime_get();
         get_imu_data(&frame.imu);
         get_baro_data(&frame.baro);
+        get_state_data(&frame.state);
 
         // Write the data to the log file
         write_log_frame_to_file(&frame);

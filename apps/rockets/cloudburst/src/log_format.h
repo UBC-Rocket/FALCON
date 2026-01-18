@@ -10,6 +10,7 @@ struct log_frame
 
     struct imu_data imu;
     struct baro_data baro;
+    struct state_data state;
 };
 
 #endif

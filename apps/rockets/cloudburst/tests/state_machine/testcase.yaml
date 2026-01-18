@@ -1,0 +1,5 @@
+tests:
+    cloudburst.state_machine:
+        platform_allow: ubcrocket_fc_2526_r1
+        tags: state_machine
+        type: unit
