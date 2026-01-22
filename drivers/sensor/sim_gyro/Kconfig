@@ -1,0 +1,3 @@
+config SIM_GYRO
+    bool "Simulated gyro sensor"
+    depends on DT_HAS_ZEPHYR_SIM_GYRO_ENABLED

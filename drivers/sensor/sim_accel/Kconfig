@@ -1,0 +1,3 @@
+config SIM_ACCEL
+    bool "Simulated accel sensor"
+    depends on DT_HAS_ZEPHYR_SIM_ACCEL_ENABLED

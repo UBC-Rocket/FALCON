@@ -4,12 +4,14 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
+#include <math.h>
 
 struct sim_baro_data {
     float altitude_m;
     float velocity_mps;
     float pressure_pa;
     float temperature_c;
+    int64_t last_ms;  // Move here so each instance has its own
 };
 
 static int sim_baro_sample_fetch(const struct device *dev,
@@ -17,15 +19,21 @@ static int sim_baro_sample_fetch(const struct device *dev,
 {
     struct sim_baro_data *data = dev->data;
 
-    static int64_t last_ms;
     int64_t now = k_uptime_get();
-    float dt = (now - last_ms) / 1000.0f;
-    last_ms = now;
+    float dt = (now - data->last_ms) / 1000.0f;
+    
+    // Initialize on first call
+    if (data->last_ms == 0) {
+        data->last_ms = now;
+        return 0;
+    }
+    
+    data->last_ms = now;
 
     if (dt <= 0) dt = 0.02f;
 
     /* Example: simple vertical motion */
-    data->velocity_mps += 0.1f * dt;      // acceleration
+    data->velocity_mps += 0.1f * dt;
     data->altitude_m   += data->velocity_mps * dt;
 
     /* Add noise */
@@ -67,27 +75,17 @@ static const struct sensor_driver_api sim_baro_api = {
     .channel_get  = sim_baro_channel_get,
 };
 
-static struct sim_baro_data sim_baro_0;
-static struct sim_baro_data sim_baro_1;
-
-DEVICE_DT_INST_DEFINE(0, NULL, NULL,
-                      &sim_baro_0, NULL,
-                      POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,
-                      &sim_baro_api);
-
-DEVICE_DT_INST_DEFINE(1, NULL, NULL,
-                      &sim_baro_1, NULL,
-                      POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,
-                      &sim_baro_api);
-
 #define SIM_BARO_INIT(inst)                                 \
-    static struct sim_baro_data sim_baro_data_##inst;       \
+    static struct sim_baro_data sim_baro_data_##inst = {    \
+        .last_ms = 0,                                       \
+    };                                                      \
     DEVICE_DT_INST_DEFINE(inst,                             \
                           NULL,                             \
                           NULL,                             \
                           &sim_baro_data_##inst,            \
-                          NULL, POST_KERNEL,                \
+                          NULL,                             \
+                          POST_KERNEL,                      \
                           CONFIG_SENSOR_INIT_PRIORITY,      \
                           &sim_baro_api);
 
-DT_INST_FOREACH_STATUS_OKAY(SIM_BARO_INIT)                      
+DT_INST_FOREACH_STATUS_OKAY(SIM_BARO_INIT)
