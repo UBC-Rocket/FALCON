@@ -25,6 +25,13 @@
         disk_name = "SD";
     };
 
+    ramdisk0: ramdisk {
+        compatible = "zephyr,ram-disk";
+        disk-name = "RAM";
+        sector-size = <512>;
+        sector-count = <2048>; /* 1 MB */
+    };
+
     aliases {
         baro0 = &sim_baro0;
         baro1 = &sim_baro1;
