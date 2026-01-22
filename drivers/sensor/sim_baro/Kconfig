@@ -1,0 +1,3 @@
+config SIM_BARO
+    bool "Simulated barometer"
+    depends on NATIVE_SIM && SENSOR

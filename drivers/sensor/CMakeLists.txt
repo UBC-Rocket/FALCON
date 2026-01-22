@@ -1,1 +1,2 @@
 add_subdirectory_ifdef(CONFIG_MS5611 ms5611)
+add_subdirectory_ifdef(CONFIG_SIM_BARO sim_baro)

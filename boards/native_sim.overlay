@@ -1,0 +1,17 @@
+/ {
+    /* Use 'zephyr,sim-baro' directly; the &zephyr node is usually for system-reserved data */
+    sim_baro0: sim_baro_0 {
+        compatible = "zephyr,sim-baro";
+        status = "okay";
+    };
+
+    sim_baro1: sim_baro_1 {
+        compatible = "zephyr,sim-baro";
+        status = "okay";
+    };
+
+    aliases {
+        baro0 = &sim_baro0;
+        baro1 = &sim_baro1;
+    };
+};
