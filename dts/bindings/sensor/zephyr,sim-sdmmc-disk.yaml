@@ -1,0 +1,11 @@
+description: Simulated SDMMC Disk for native_sim
+compatible: "zephyr,sim-sdmmc-disk"
+include: sensor-device.yaml
+
+properties:
+  disk_name:
+    type: string
+    required: true
+    description: |
+      The string name used to identify the disk (e.g., "SD" or "RAM")
+      This must match what is passed to disk_access_init().

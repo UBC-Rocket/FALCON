@@ -10,13 +10,19 @@
     };
 
     accel0: accel_0 {
-        compatible = "zephyr,sim-baro";
+        compatible = "zephyr,sim-accel";
         status = "okay";
     };
 
-    gyro0: gryo_0 {
-        compatible = "zephyr,sim-baro";
+    gyro0: gyro_0 {
+        compatible = "zephyr,sim-gyro";
         status = "okay";
+    };
+
+    sdmmc1: sdmmc1 {
+        compatible = "zephyr,sim-sdmmc-disk";
+        status = "okay";
+        disk_name = "SD";
     };
 
     aliases {
@@ -24,5 +30,6 @@
         baro1 = &sim_baro1;
         accel0 = &accel0;
         gyro0 = &gyro0;
+        sdmmc1 = &sdmmc1;
     };
 };
