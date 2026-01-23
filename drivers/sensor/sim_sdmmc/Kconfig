@@ -1,0 +1,3 @@
+config SIM_SDMMC
+    bool "Simulated sdmmc"
+    depends on DT_HAS_ZEPHYR_SIM_SDMMC_ENABLED

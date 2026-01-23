@@ -1,2 +1,5 @@
 add_subdirectory_ifdef(CONFIG_MS5611 ms5611)
 add_subdirectory_ifdef(CONFIG_SIM_BARO sim_baro)
+add_subdirectory_ifdef(CONFIG_SIM_ACCEL sim_accel)
+add_subdirectory_ifdef(CONFIG_SIM_GYRO sim_gyro)
+add_subdirectory_ifdef(CONFIG_SIM_SDMMC sim_sdmmc)

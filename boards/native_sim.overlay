@@ -9,23 +9,26 @@
         status = "okay";
     };
 
-    accel0: accel_0 {
+    sim_accel0: sim_accel_0 {
         compatible = "zephyr,sim-accel";
         status = "okay";
     };
 
-    gyro0: gyro_0 {
+    sim_gyro0: sim_gyro_0 {
         compatible = "zephyr,sim-gyro";
         status = "okay";
     };
 
-    sdmmc1: sdmmc1 {
-        compatible = "zephyr,sim-sdmmc-disk";
+    sim_sdmmc1: sim_sdmmc_1 {
+        compatible = "zephyr,posix-disk";
         status = "okay";
-        disk_name = "SD";
+        disk-name = "SD";
+        backing-store = "/tmp/cloudburst_sd.img";
+        sector-size = <512>;
+        sector-count = <131072>; /* 64 MB */
     };
 
-    ramdisk0: ramdisk {
+    sim_ramdisk0: ramdisk {
         compatible = "zephyr,ram-disk";
         disk-name = "RAM";
         sector-size = <512>;
@@ -35,8 +38,9 @@
     aliases {
         baro0 = &sim_baro0;
         baro1 = &sim_baro1;
-        accel0 = &accel0;
-        gyro0 = &gyro0;
-        sdmmc1 = &sdmmc1;
+        accel0 = &sim_accel0;
+        gyro0 = &sim_gyro0;
+        sdmmc1 = &sim_sdmmc1;
+        ramdisk0 = &sim_ramdisk0;
     };
 };
