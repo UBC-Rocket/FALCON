@@ -47,36 +47,29 @@ struct sim_baro_data {
 
 static int parse_csv_line(const char *line, struct csv_row *row)
 {
-    char buffer[MAX_LINE_LENGTH];
-    strncpy(buffer, line, MAX_LINE_LENGTH - 1);
-    buffer[MAX_LINE_LENGTH - 1] = '\0';
+    int64_t timestamp;
+    float altitude, baseline, pressure, temperature;
+    int parsed;
     
-    char *token;
-    char *saveptr;
-    int field = 0;
+    // Read first 6 fields (we ignore the rest)
+    // Format: Timestamp (ms),State,Altitude (m),Baseline altitude (m),Pressure (mbar),Barom. Temp (0.01 C),...
+    parsed = sscanf(line, "%lld,%*[^,],%f,%f,%f,%f",
+                    &timestamp,
+                    &altitude,
+                    &baseline,
+                    &pressure,
+                    &temperature);
     
-    token = strtok_r(buffer, ",", &saveptr);
-    while (token != NULL) {
-        switch (field) {
-            case 0: // Timestamp (ms)
-                row->timestamp_ms = (int64_t)atoll(token);
-                break;
-            case 2: // Altitude (m)
-                row->altitude_m = atof(token);
-                break;
-            case 4: // Pressure (mbar)
-                row->pressure_mbar = atof(token) / 100.0f; // Convert cmbar to mbar
-                break;
-            case 5: // Barom. Temp (0.01 C) - need to divide by 100
-                row->temperature_c = atof(token) / 100.0f;
-                break;
-        }
-        field++;
-        token = strtok_r(NULL, ",", &saveptr);
+    if (parsed != 5) {
+        return -1;
     }
     
-    // Validate we got the required fields
-    return (field >= 6) ? 0 : -1;
+    row->timestamp_ms = timestamp;
+    row->altitude_m = altitude;
+    row->pressure_mbar = pressure / 100.0f;    // Convert from cmbar to mbar (hPa)
+    row->temperature_c = temperature / 100.0f; // Convert from centi-°C to °C
+    
+    return 0;
 }
 
 static int load_csv_data(struct sim_baro_data *data)
