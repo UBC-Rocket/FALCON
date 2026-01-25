@@ -99,6 +99,52 @@ void start_state_machine_thread(void)
     );
 }
 
+#if defined(CONFIG_ZTEST)
+void state_machine_test_reset(int64_t start_ms)
+{
+    state_machine_reset(start_ms);
+}
+
+void state_machine_test_step(float altitude_m, float velocity_mps, int64_t timestamp_ms)
+{
+    state_machine.sample.altitude_m = altitude_m;
+    state_machine.sample.velocity_mps = velocity_mps;
+    state_machine.sample.timestamp_ms = timestamp_ms;
+    smf_run_state(SMF_CTX(&state_machine));
+
+    struct state_data data = {
+        .state = state_machine.current_id,
+        .ground_altitude = state_machine.ground_altitude_m,
+        .timestamp = timestamp_ms,
+    };
+    set_state_data(&data);
+}
+
+void state_machine_test_setup_state(flight_state_id_t state, float ground_altitude_m, int64_t timestamp_ms)
+{
+    state_machine_reset(timestamp_ms);
+    state_machine.ground_altitude_m = ground_altitude_m;
+    state_machine.ground_ready = true;
+    state_machine.sample.timestamp_ms = timestamp_ms;
+    transition_to(&state_machine, state);
+}
+
+flight_state_id_t state_machine_test_get_state(void)
+{
+    return state_machine.current_id;
+}
+
+float state_machine_test_get_ground_altitude(void)
+{
+    return state_machine.ground_altitude_m;
+}
+
+bool state_machine_test_get_drogue_fire_triggered(void)
+{
+    return state_machine.drogue_fire_triggered;
+}
+#endif
+
 /**
  * @brief Reset and initialize the state machine context.
  */
