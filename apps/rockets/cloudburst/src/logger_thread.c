@@ -229,6 +229,7 @@ static void logger_thread_fn(void *p1, void *p2, void *p3) {
 }
 
 void start_logger_thread() {
+    return;
     k_thread_create(
         &logger_thread,
         logger_stack,
