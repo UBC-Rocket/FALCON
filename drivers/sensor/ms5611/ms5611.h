@@ -7,8 +7,8 @@
 #ifndef __SENSOR_MS5611_H__
 #define __SENSOR_MS5611_H__
 
-#include <zephyr/types.h>
 #include <zephyr/device.h>
+#include <zephyr/types.h>
 
 #if DT_ANY_INST_ON_BUS_STATUS_OKAY(i2c)
 #include <zephyr/drivers/i2c.h>
@@ -41,42 +41,42 @@
 #define MS5611_CMD_CONV_READ_CRC 0xAE
 
 #if defined(CONFIG_MS5611_PRES_OVER_256X)
-	#define MS5611_PRES_OVER_DEFAULT 256
+#define MS5611_PRES_OVER_DEFAULT 256
 #elif defined(CONFIG_MS5611_PRES_OVER_512X)
-	#define MS5611_PRES_OVER_DEFAULT 512
+#define MS5611_PRES_OVER_DEFAULT 512
 #elif defined(CONFIG_MS5611_PRES_OVER_1024X)
-	#define MS5611_PRES_OVER_DEFAULT 1024
+#define MS5611_PRES_OVER_DEFAULT 1024
 #elif defined(CONFIG_MS5611_PRES_OVER_2048X)
-	#define MS5611_PRES_OVER_DEFAULT 2048
+#define MS5611_PRES_OVER_DEFAULT 2048
 #elif defined(CONFIG_MS5611_PRES_OVER_4096X)
-	#define MS5611_PRES_OVER_DEFAULT 4096
+#define MS5611_PRES_OVER_DEFAULT 4096
 #else
-	#define MS5611_PRES_OVER_DEFAULT 2048
+#define MS5611_PRES_OVER_DEFAULT 2048
 #endif
 
 #if defined(CONFIG_MS5611_TEMP_OVER_256X)
-	#define MS5611_TEMP_OVER_DEFAULT 256
+#define MS5611_TEMP_OVER_DEFAULT 256
 #elif defined(CONFIG_MS5611_TEMP_OVER_512X)
-	#define MS5611_TEMP_OVER_DEFAULT 512
+#define MS5611_TEMP_OVER_DEFAULT 512
 #elif defined(CONFIG_MS5611_TEMP_OVER_1024X)
-	#define MS5611_TEMP_OVER_DEFAULT 1024
+#define MS5611_TEMP_OVER_DEFAULT 1024
 #elif defined(CONFIG_MS5611_TEMP_OVER_2048X)
-	#define MS5611_TEMP_OVER_DEFAULT 2048
+#define MS5611_TEMP_OVER_DEFAULT 2048
 #elif defined(CONFIG_MS5611_TEMP_OVER_4096X)
-	#define MS5611_TEMP_OVER_DEFAULT 4096
+#define MS5611_TEMP_OVER_DEFAULT 4096
 #else
-	#define MS5611_TEMP_OVER_DEFAULT 2048
+#define MS5611_TEMP_OVER_DEFAULT 2048
 #endif
 
 /* Forward declaration */
 struct ms5611_config;
 
 struct ms5611_transfer_function {
-	int (*bus_check)(const struct ms5611_config *cfg);
-	int (*reset)(const struct ms5611_config *cfg);
-	int (*read_prom)(const struct ms5611_config *cfg, uint8_t cmd, uint16_t *val);
-	int (*start_conversion)(const struct ms5611_config *cfg, uint8_t cmd);
-	int (*read_adc)(const struct ms5611_config *cfg, uint32_t *val);
+  int (*bus_check)(const struct ms5611_config *cfg);
+  int (*reset)(const struct ms5611_config *cfg);
+  int (*read_prom)(const struct ms5611_config *cfg, uint8_t cmd, uint16_t *val);
+  int (*start_conversion)(const struct ms5611_config *cfg, uint8_t cmd);
+  int (*read_adc)(const struct ms5611_config *cfg, uint32_t *val);
 };
 
 #if DT_ANY_INST_ON_BUS_STATUS_OKAY(i2c)
@@ -88,36 +88,36 @@ extern const struct ms5611_transfer_function ms5611_spi_transfer_function;
 #endif
 
 struct ms5611_config {
-	const struct ms5611_transfer_function *tf;
-	union {
+  const struct ms5611_transfer_function *tf;
+  union {
 #if DT_ANY_INST_ON_BUS_STATUS_OKAY(i2c)
-		struct i2c_dt_spec i2c;
+    struct i2c_dt_spec i2c;
 #endif
 #if DT_ANY_INST_ON_BUS_STATUS_OKAY(spi)
-		struct spi_dt_spec spi;
+    struct spi_dt_spec spi;
 #endif
-	} bus_cfg;
+  } bus_cfg;
 };
 
 struct ms5611_data {
-	/* Calibration values */
-	uint16_t sens_t1;
-	uint16_t off_t1;
-	uint16_t tcs;
-	uint16_t tco;
-	uint16_t t_ref;
-	uint16_t tempsens;
+  /* Calibration values */
+  uint16_t sens_t1;
+  uint16_t off_t1;
+  uint16_t tcs;
+  uint16_t tco;
+  uint16_t t_ref;
+  uint16_t tempsens;
 
-	/* Measured values */
-	int32_t pressure;
-	int32_t temperature;
+  /* Measured values */
+  int32_t pressure;
+  int32_t temperature;
 
-	/* conversion commands */
-	uint8_t pressure_conv_cmd;
-	uint8_t temperature_conv_cmd;
+  /* conversion commands */
+  uint8_t pressure_conv_cmd;
+  uint8_t temperature_conv_cmd;
 
-	uint8_t pressure_conv_delay;
-	uint8_t temperature_conv_delay;
+  uint8_t pressure_conv_delay;
+  uint8_t temperature_conv_delay;
 };
 
 #endif /* __SENSOR_MS607_H__*/
