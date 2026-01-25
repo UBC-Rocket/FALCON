@@ -39,6 +39,23 @@
         gyro0 = &gyro0;
         baro0 = &baro0;
         baro1 = &baro1;
+        pyro0 = &pyro0;
+    };
+};
+
+// Enable and configure SPI2
+&spi1 {
+    status = "okay";
+    pinctrl-0 = <&spi1_sck_pa5 &spi1_mosi_pa7 &spi1_miso_pa6>;
+    pinctrl-names = "default";
+
+    // Chip select pin for Pyro board on PE14 (i think)
+    cs-gpios = <&gpioe 14 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    pyro0: pyro0@0 {
+        status = "okay";
+        compatible = "vnd,spi-device"; //  TODO: Could write a custom binding instead of using this test one with raw spi commands
+        reg = <0>;
+        spi-max-frequency = <1000000>;
     };
 };
 
