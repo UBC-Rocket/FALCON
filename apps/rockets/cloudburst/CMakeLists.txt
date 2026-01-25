@@ -11,6 +11,8 @@ set(ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_LIST_DIR}/../../..)
 # Compatible boards for this app
 set(COMPATIBLE_BOARDS
     ubcrocket_fc_2526_r1
+    native_sim/native/64
+    native_sim
 )
 
 if(NOT BOARD IN_LIST COMPATIBLE_BOARDS)
@@ -44,3 +46,7 @@ target_include_directories(app PRIVATE
   src
   src/state_machine
 )
+
+if(DEFINED DATA_FILE)
+  zephyr_compile_definitions(DATA_FILE="${DATA_FILE}")
+endif()
