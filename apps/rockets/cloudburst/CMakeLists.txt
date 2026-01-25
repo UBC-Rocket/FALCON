@@ -40,6 +40,7 @@ target_sources(app PRIVATE
   src/state_machine/states/drogue_descent.c
   src/state_machine/states/main_descent.c
   src/state_machine/states/landed.c
+  src/pyro/pyro_thread.c
 )
 
 target_include_directories(app PRIVATE

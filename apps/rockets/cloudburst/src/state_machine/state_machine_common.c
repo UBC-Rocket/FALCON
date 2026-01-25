@@ -1,6 +1,7 @@
 #include <zephyr/logging/log.h>
 
 #include "state_machine_internal.h"
+#include "../pyro/pyro_thread.h"
 
 LOG_MODULE_DECLARE(state_machine);
 
@@ -54,7 +55,10 @@ float get_relative_altitude(const struct flight_sm *sm, float altitude_m)
 void state_action_fire_drogue(void)
 {
     LOG_INF("Drogue deployment triggered");
-    // TODO: Signal drogue deployment here
+    int ret = pyro_fire_drogue();
+    if (ret != 0) {
+        LOG_ERR("Failed to fire drogue: %d", ret);
+    }
 }
 
 /**
@@ -63,7 +67,10 @@ void state_action_fire_drogue(void)
 void state_action_fire_main(void)
 {
     LOG_INF("Main deployment triggered");
-    // TODO: Signal main deployment here
+    int ret = pyro_fire_main();
+    if (ret != 0) {
+        LOG_ERR("Failed to fire main: %d", ret);
+    }
 }
 
 /**
