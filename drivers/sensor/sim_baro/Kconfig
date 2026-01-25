@@ -1,0 +1,7 @@
+config SIM_BARO
+    bool "Simulated barometer sensor"
+    depends on DT_HAS_ZEPHYR_SIM_BARO_ENABLED
+    help
+      Enable simulated barometer sensor driver for testing.
+      This driver provides pressure, altitude, and temperature
+      readings with simulated motion and noise.
