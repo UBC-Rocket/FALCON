@@ -1,6 +1,6 @@
+#include "data.h"
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include "data.h"
 
 LOG_MODULE_REGISTER(data, LOG_LEVEL_INF);
 

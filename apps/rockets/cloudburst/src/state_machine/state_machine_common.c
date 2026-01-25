@@ -1,7 +1,7 @@
 #include <zephyr/logging/log.h>
 
-#include "state_machine_internal.h"
 #include "../pyro/pyro_thread.h"
+#include "state_machine_internal.h"
 
 LOG_MODULE_DECLARE(state_machine);
 

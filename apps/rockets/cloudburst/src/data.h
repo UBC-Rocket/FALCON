@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 
-typedef enum
-{
+typedef enum {
     FLIGHT_STATE_STANDBY = 0,
     FLIGHT_STATE_ASCENT,
     FLIGHT_STATE_MACH_LOCK,
@@ -14,40 +13,36 @@ typedef enum
 } flight_state_id_t;
 
 // Data structures for sensor data
-struct imu_data
-{
+struct imu_data {
     float accel[3];    // Acceleration in m/s²
     float gyro[3];     // Angular velocity in rad/s
     int64_t timestamp; // Timestamp in milliseconds
 };
 
 // Per-barometer sensor data
-struct baro_sensor_data
-{
-    float pressure;     // Pressure in Pa
-    float temperature;  // Temperature in °C
-    float altitude;     // Altitude in meters (from pressure + temp)
-    float nis;          // Normalized innovation squared
-    uint8_t faults;     // Accumulated fault count
-    bool healthy;       // Health status (accepted/rejected)
+struct baro_sensor_data {
+    float pressure;    // Pressure in Pa
+    float temperature; // Temperature in °C
+    float altitude;    // Altitude in meters (from pressure + temp)
+    float nis;         // Normalized innovation squared
+    uint8_t faults;    // Accumulated fault count
+    bool healthy;      // Health status (accepted/rejected)
 };
 
 // Combined barometer data (shared with other threads)
-struct baro_data
-{
-    struct baro_sensor_data baro0;  // Barometer 0
-    struct baro_sensor_data baro1;  // Barometer 1
+struct baro_data {
+    struct baro_sensor_data baro0; // Barometer 0
+    struct baro_sensor_data baro1; // Barometer 1
 
-    float altitude;           // Kalman-filtered altitude estimate in meters
-    float alt_variance;      // Kalman filter variance (P)
-    float velocity;           // Vertical velocity estimate (m/s)
-    float vel_variance;      // Velocity variance (P11)
+    float altitude;     // Kalman-filtered altitude estimate in meters
+    float alt_variance; // Kalman filter variance (P)
+    float velocity;     // Vertical velocity estimate (m/s)
+    float vel_variance; // Velocity variance (P11)
 
-    int64_t timestamp;        // Timestamp in milliseconds
+    int64_t timestamp; // Timestamp in milliseconds
 };
 
-struct state_data
-{
+struct state_data {
     flight_state_id_t state;
     float ground_altitude;
     int64_t timestamp;

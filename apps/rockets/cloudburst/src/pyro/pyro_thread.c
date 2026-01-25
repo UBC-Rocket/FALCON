@@ -1,16 +1,16 @@
-#include <zephyr/kernel.h>
+#include "pyro_thread.h"
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/spi.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include "pyro_thread.h"
 
 LOG_MODULE_REGISTER(pyro_thread, LOG_LEVEL_INF);
 
 // Thread configuration
 #define PYRO_THREAD_STACK_SIZE 2048
 #define PYRO_THREAD_PRIORITY 0
-#define PYRO_STATUS_POLL_INTERVAL_MS 100 
+#define PYRO_STATUS_POLL_INTERVAL_MS 100
 
 // Thread stack and data
 K_THREAD_STACK_DEFINE(pyro_stack, PYRO_THREAD_STACK_SIZE);
@@ -38,10 +38,8 @@ static pyro_status_t latest_status = {
 };
 
 // SPI device configuration
-static const struct spi_dt_spec pyro_spi = SPI_DT_SPEC_GET(
-    DT_ALIAS(pyro0),
-    SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_WORD_SET(8)
-);
+static const struct spi_dt_spec pyro_spi =
+    SPI_DT_SPEC_GET(DT_ALIAS(pyro0), SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_WORD_SET(8));
 
 /**
  * @brief Send a command to the pyro board and receive status
@@ -77,7 +75,7 @@ static int pyro_spi_transact(uint8_t cmd, uint8_t *status_out)
 
     // Log what we're about to send
     LOG_DBG("SPI TX: 0x%02x", tx_buf);
-    
+
     ret = spi_transceive_dt(&pyro_spi, &tx_set, &rx_set);
     if (ret < 0) {
         LOG_ERR("SPI transceive failed: %d", ret);
@@ -128,24 +126,18 @@ static int request_pyro_status(void)
 {
     uint8_t status_byte;
     int ret = pyro_spi_transact(PYRO_CMD_STATUS_REQ, &status_byte);
-    
+
     if (ret == 0) {
         pyro_status_t new_status;
         parse_status_byte(status_byte, &new_status);
         update_latest_status(&new_status);
-        
-        LOG_DBG("Pyro status: 0x%02x [D:%d M:%d DF:%d MF:%d DC:%d MC:%d DA:%d MA:%d]",
-                status_byte,
-                new_status.drogue_fired,
-                new_status.main_fired,
-                new_status.drogue_fail,
-                new_status.main_fail,
-                new_status.drogue_cont_ok,
-                new_status.main_cont_ok,
-                new_status.drogue_fire_ack,
-                new_status.main_fire_ack);
+
+        LOG_DBG("Pyro status: 0x%02x [D:%d M:%d DF:%d MF:%d DC:%d MC:%d DA:%d MA:%d]", status_byte,
+                new_status.drogue_fired, new_status.main_fired, new_status.drogue_fail,
+                new_status.main_fail, new_status.drogue_cont_ok, new_status.main_cont_ok,
+                new_status.drogue_fire_ack, new_status.main_fire_ack);
     }
-    
+
     return ret;
 }
 
@@ -211,26 +203,26 @@ static void log_fire_result(uint8_t cmd, const pyro_status_t *status, int retry_
 static void execute_pyro_command(uint8_t cmd)
 {
     LOG_INF("Executing pyro command: 0x%02x", cmd);
-    
+
     bool acked = false;
     int retry_count = 0;
     const int MAX_RETRIES = 100; // Retry for ~1 second (10ms per attempt)
-    
+
     // Keep sending command until we get an ACK
     while (!acked && retry_count < MAX_RETRIES) {
         uint8_t status_byte;
         int ret = pyro_spi_transact(cmd, &status_byte);
-        
+
         if (ret == 0) {
             pyro_status_t new_status;
             parse_status_byte(status_byte, &new_status);
             update_latest_status(&new_status);
-            
+
             // Check if command was acknowledged
             if (is_fire_command_acked(cmd, &new_status)) {
                 LOG_INF("Pyro command 0x%02x acknowledged (attempt %d)", cmd, retry_count + 1);
                 acked = true;
-                
+
                 // Log immediate result if available
                 if (is_fire_command_complete(cmd, &new_status)) {
                     log_fire_result(cmd, &new_status, retry_count);
@@ -239,13 +231,13 @@ static void execute_pyro_command(uint8_t cmd)
         } else {
             LOG_ERR("SPI error on pyro command 0x%02x: %d", cmd, ret);
         }
-        
+
         if (!acked) {
             retry_count++;
             k_sleep(K_MSEC(10));
         }
     }
-    
+
     if (!acked) {
         LOG_ERR("Pyro command 0x%02x not acknowledged after %d attempts", cmd, retry_count);
     }
@@ -274,7 +266,7 @@ static void pyro_thread_fn(void *p1, void *p2, void *p3)
 
         // Wait for commands (cpu is yielding) or timeout after 100ms
         ret = k_msgq_get(&pyro_cmd_queue, &cmd, K_MSEC(PYRO_STATUS_POLL_INTERVAL_MS));
-        
+
         if (ret == 0) {
             // Command received - execute it with retry logic
             execute_pyro_command(cmd);
@@ -302,16 +294,8 @@ static int send_pyro_command(uint8_t cmd)
 
 void start_pyro_thread(void)
 {
-    k_thread_create(
-        &pyro_thread_data,
-        pyro_stack,
-        K_THREAD_STACK_SIZEOF(pyro_stack),
-        pyro_thread_fn,
-        NULL, NULL, NULL,
-        PYRO_THREAD_PRIORITY,
-        0,
-        K_NO_WAIT
-    );
+    k_thread_create(&pyro_thread_data, pyro_stack, K_THREAD_STACK_SIZEOF(pyro_stack),
+                    pyro_thread_fn, NULL, NULL, NULL, PYRO_THREAD_PRIORITY, 0, K_NO_WAIT);
     k_thread_name_set(&pyro_thread_data, "pyro");
 }
 

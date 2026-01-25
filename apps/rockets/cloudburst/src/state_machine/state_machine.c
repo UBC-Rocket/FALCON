@@ -11,8 +11,8 @@
 LOG_MODULE_REGISTER(state_machine, LOG_LEVEL_INF);
 
 #define STATE_THREAD_STACK_SIZE 2048
-#define STATE_THREAD_PRIORITY   5
-#define STATE_THREAD_PERIOD_MS  20
+#define STATE_THREAD_PRIORITY 5
+#define STATE_THREAD_PERIOD_MS 20
 
 static K_THREAD_STACK_DEFINE(state_stack, STATE_THREAD_STACK_SIZE);
 static struct k_thread state_thread;
@@ -30,8 +30,7 @@ void transition_to(struct flight_sm *sm, flight_state_id_t next_state)
         return;
     }
 
-    LOG_INF("State change: %s -> %s",
-            flight_state_to_string(sm->current_id),
+    LOG_INF("State change: %s -> %s", flight_state_to_string(sm->current_id),
             flight_state_to_string(next_state));
     smf_set_state(SMF_CTX(sm), &flight_states[next_state]);
 }
@@ -87,16 +86,8 @@ void start_state_machine_thread(void)
 {
     state_machine_reset(k_uptime_get());
 
-    k_thread_create(
-        &state_thread,
-        state_stack,
-        K_THREAD_STACK_SIZEOF(state_stack),
-        state_machine_thread_fn,
-        NULL, NULL, NULL,
-        STATE_THREAD_PRIORITY,
-        0,
-        K_NO_WAIT
-    );
+    k_thread_create(&state_thread, state_stack, K_THREAD_STACK_SIZEOF(state_stack),
+                    state_machine_thread_fn, NULL, NULL, NULL, STATE_THREAD_PRIORITY, 0, K_NO_WAIT);
 }
 
 #if defined(CONFIG_ZTEST)
@@ -120,7 +111,8 @@ void state_machine_test_step(float altitude_m, float velocity_mps, int64_t times
     set_state_data(&data);
 }
 
-void state_machine_test_setup_state(flight_state_id_t state, float ground_altitude_m, int64_t timestamp_ms)
+void state_machine_test_setup_state(flight_state_id_t state, float ground_altitude_m,
+                                    int64_t timestamp_ms)
 {
     state_machine_reset(timestamp_ms);
     state_machine.ground_altitude_m = ground_altitude_m;

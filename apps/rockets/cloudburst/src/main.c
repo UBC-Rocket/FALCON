@@ -1,14 +1,14 @@
-#include <zephyr/kernel.h>
+#include "data.h"
+#include "logger_thread.h"
+#include "pyro/pyro_thread.h"
+#include "sensors/baro_thread.h"
+#include "sensors/imu_thread.h"
+#include "state_machine/state_machine.h"
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/sensor.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include "sensors/imu_thread.h"
-#include "sensors/baro_thread.h"
-#include "logger_thread.h"
-#include "state_machine/state_machine.h"
-#include "pyro/pyro_thread.h"
-#include "data.h"
 
 LOG_MODULE_REGISTER(falcon_main, LOG_LEVEL_INF);
 

@@ -1,47 +1,47 @@
 #include <math.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/sensor.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 #include "../data.h"
 
 LOG_MODULE_REGISTER(baro_thread, LOG_LEVEL_INF);
 
-#define BARO_THREAD_STACK_SIZE     2048
-#define BARO_THREAD_PRIORITY       1
+#define BARO_THREAD_STACK_SIZE 2048
+#define BARO_THREAD_PRIORITY 1
 
-#define BARO_THREAD_PERIOD_MS      30
+#define BARO_THREAD_PERIOD_MS 30
 
 // Debug logging
-#define BARO_LOG_ENABLE            0
+#define BARO_LOG_ENABLE 0
 
 /* NIS gating */
-#define BARO_NIS_THRESHOLD         6.0f    // soft threshold for health counter
-#define BARO_NIS_HARD_REJECT       25.0f   // immediate reject even if "healthy"
-#define BARO_FAULT_LIMIT           5
+#define BARO_NIS_THRESHOLD 6.0f    // soft threshold for health counter
+#define BARO_NIS_HARD_REJECT 25.0f // immediate reject even if "healthy"
+#define BARO_FAULT_LIMIT 5
 
 /* Altitude conversion */
-#define P0_PA                      101325.0f
-#define GAS_CONSTANT_AIR           287.05f
-#define GRAVITY                    9.80665f
+#define P0_PA 101325.0f
+#define GAS_CONSTANT_AIR 287.05f
+#define GRAVITY 9.80665f
 
 /* Tuning knobs */
-#define KF_SIGMA_A                 45.0f   // m/s^2, process noise standard deviation of acceleration
-#define BARO0_SIGMA_Z              1.5f    // m, measurement noise standard deviation of altitude
-#define BARO1_SIGMA_Z              1.5f    // m
+#define KF_SIGMA_A 45.0f   // m/s^2, process noise standard deviation of acceleration
+#define BARO0_SIGMA_Z 1.5f // m, measurement noise standard deviation of altitude
+#define BARO1_SIGMA_Z 1.5f // m
 
 /* Safety limits for dt */
-#define KF_DT_MIN_S                0.001f
-#define KF_DT_MAX_S                0.200f
+#define KF_DT_MIN_S 0.001f
+#define KF_DT_MAX_S 0.200f
 
 typedef struct {
-    float h;     // altitude estimate (m)
-    float v;     // vertical velocity estimate (m/s)
+    float h; // altitude estimate (m)
+    float v; // vertical velocity estimate (m/s)
 
     /* Covariance matrix P:
        [ P00 P01 ]
@@ -72,8 +72,7 @@ static struct k_thread baro_thread;
 static float pressure_temp_to_altitude(float pressure_pa, float temp_c)
 {
     float temp_k = temp_c + 273.15f;
-    return (GAS_CONSTANT_AIR * temp_k / GRAVITY) *
-           logf(P0_PA / pressure_pa);
+    return (GAS_CONSTANT_AIR * temp_k / GRAVITY) * logf(P0_PA / pressure_pa);
 }
 
 static void kf_predict(kalman_hv_t *kf, float dt_s, float sigma_a)
@@ -164,13 +163,18 @@ static void kf_update_baro(kalman_hv_t *kf, float z_alt, float R)
 }
 
 // Compute NIS using a provided predicted state (so both sensors are judged fairly)
-static float kf_compute_nis(const kalman_hv_t *kf_pred, float z_alt, float R, float *out_y, float *out_S)
+static float kf_compute_nis(const kalman_hv_t *kf_pred, float z_alt, float R, float *out_y,
+                            float *out_S)
 {
     float y = z_alt - kf_pred->h;
     float S = kf_pred->P00 + R;
 
-    if (out_y) *out_y = y;
-    if (out_S) *out_S = S;
+    if (out_y) {
+        *out_y = y;
+    }
+    if (out_S) {
+        *out_S = S;
+    }
 
     if (S < 1e-9f) {
         return BARO_NIS_HARD_REJECT;
@@ -192,7 +196,8 @@ static void update_baro_health(baro_health_t *health, float nis)
     health->healthy = (health->fault_count < BARO_FAULT_LIMIT);
 }
 
-static bool read_baro(const struct device *dev, float *pressure_pa, float *altitude, float *temperature_c)
+static bool read_baro(const struct device *dev, float *pressure_pa, float *altitude,
+                      float *temperature_c)
 {
     struct sensor_value pressure;
     struct sensor_value temperature;
@@ -223,14 +228,9 @@ static bool read_baro(const struct device *dev, float *pressure_pa, float *altit
     return true;
 }
 
-static void assess_baro_measurement(
-    const kalman_hv_t *kf_pred,
-    baro_health_t *health,
-    float pressure_pa,
-    float altitude,
-    float temperature_c,
-    float R,
-    baro_measurement_t *out)
+static void assess_baro_measurement(const kalman_hv_t *kf_pred, baro_health_t *health,
+                                    float pressure_pa, float altitude, float temperature_c, float R,
+                                    baro_measurement_t *out)
 {
     out->pressure_pa = pressure_pa;
     out->altitude = altitude;
@@ -246,12 +246,8 @@ static void assess_baro_measurement(
     out->accepted = health->healthy && (nis < BARO_NIS_HARD_REJECT);
 }
 
-static bool kf_try_init_from_baro(
-    kalman_hv_t *kf,
-    const baro_measurement_t *m0,
-    const baro_measurement_t *m1,
-    float R0,
-    float R1)
+static bool kf_try_init_from_baro(kalman_hv_t *kf, const baro_measurement_t *m0,
+                                  const baro_measurement_t *m1, float R0, float R1)
 {
     bool initialized = false;
 
@@ -290,14 +286,9 @@ static void log_baro(const char *name, const baro_measurement_t *m, const baro_h
         return;
     }
 
-    LOG_INF("%s: p=%.1f Pa | alt=%.2f m | T=%.2f C | nis=%.2f | faults=%d | %s",
-            name,
-            (double)m->pressure_pa,
-            (double)m->altitude,
-            (double)m->temperature_c,
-            (double)m->nis,
-            h->fault_count,
-            m->accepted ? "ACCEPTED" : "REJECTED");
+    LOG_INF("%s: p=%.1f Pa | alt=%.2f m | T=%.2f C | nis=%.2f | faults=%d | %s", name,
+            (double)m->pressure_pa, (double)m->altitude, (double)m->temperature_c, (double)m->nis,
+            h->fault_count, m->accepted ? "ACCEPTED" : "REJECTED");
 }
 
 static void baro_thread_fn(void *p1, void *p2, void *p3)
@@ -312,7 +303,7 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
         LOG_ERR("No barometers ready");
         return;
     }
-    
+
     if (!baro0_ready) {
         LOG_WRN("BARO0 not ready; continuing with BARO1 only");
         baro0 = NULL;
@@ -328,11 +319,7 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
        P00 is how uncertain you are about altitude at boot.
        P11 is how uncertain you are about velocity at boot.
     */
-    kalman_hv_t kf = {
-        .h = 0.0f, .v = 0.0f,
-        .P00 = 25.0f, .P01 = 0.0f,
-        .P10 = 0.0f,  .P11 = 100.0f
-    };
+    kalman_hv_t kf = {.h = 0.0f, .v = 0.0f, .P00 = 25.0f, .P01 = 0.0f, .P10 = 0.0f, .P11 = 100.0f};
 
     baro_health_t health_0 = {0, true};
     baro_health_t health_1 = {0, true};
@@ -349,8 +336,12 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
         float dt_s = (float)(now_ms - last_ts_ms) / 1000.0f;
         last_ts_ms = now_ms;
 
-        if (dt_s < KF_DT_MIN_S) dt_s = KF_DT_MIN_S;
-        if (dt_s > KF_DT_MAX_S) dt_s = KF_DT_MAX_S;
+        if (dt_s < KF_DT_MIN_S) {
+            dt_s = KF_DT_MIN_S;
+        }
+        if (dt_s > KF_DT_MAX_S) {
+            dt_s = KF_DT_MAX_S;
+        }
 
         // Predict
         kf_predict(&kf, dt_s, KF_SIGMA_A);
@@ -383,12 +374,12 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
         }
 
         if (!kf_initialized) {
-            kf_initialized = kf_try_init_from_baro(
-                &kf, &measurement_0, &measurement_1, R0, R1);
+            kf_initialized = kf_try_init_from_baro(&kf, &measurement_0, &measurement_1, R0, R1);
         }
 
         // Apply measurement updates: update the more trusted sensor first (smaller R)
-        if (measurement_0.valid && measurement_0.accepted && measurement_1.valid && measurement_1.accepted) {
+        if (measurement_0.valid && measurement_0.accepted && measurement_1.valid &&
+            measurement_1.accepted) {
             if (R0 <= R1) {
                 kf_update_baro(&kf, measurement_0.altitude, R0);
                 kf_update_baro(&kf, measurement_1.altitude, R1);
@@ -408,37 +399,30 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
         log_baro("BARO0", &measurement_0, &health_0);
         log_baro("BARO1", &measurement_1, &health_1);
 
-        struct baro_data data = {
-            .baro0 = {
-                .pressure = measurement_0.pressure_pa,
-                .altitude    = measurement_0.altitude,
-                .temperature = measurement_0.temperature_c,
-                .nis         = measurement_0.nis,
-                .faults      = health_0.fault_count,
-                .healthy     = health_0.healthy
-            },
-            .baro1 = {
-                .pressure = measurement_1.pressure_pa,
-                .altitude    = measurement_1.altitude,
-                .temperature = measurement_1.temperature_c,
-                .nis         = measurement_1.nis,
-                .faults      = health_1.fault_count,
-                .healthy     = health_1.healthy
-            },
-            .altitude      = kf.h,
-            .alt_variance      = kf.P00,
-            .velocity      = kf.v,
-            .vel_variance  = kf.P11,
-            .timestamp     = now_ms
-        };
+        struct baro_data data = {.baro0 = {.pressure = measurement_0.pressure_pa,
+                                           .altitude = measurement_0.altitude,
+                                           .temperature = measurement_0.temperature_c,
+                                           .nis = measurement_0.nis,
+                                           .faults = health_0.fault_count,
+                                           .healthy = health_0.healthy},
+                                 .baro1 = {.pressure = measurement_1.pressure_pa,
+                                           .altitude = measurement_1.altitude,
+                                           .temperature = measurement_1.temperature_c,
+                                           .nis = measurement_1.nis,
+                                           .faults = health_1.fault_count,
+                                           .healthy = health_1.healthy},
+                                 .altitude = kf.h,
+                                 .alt_variance = kf.P00,
+                                 .velocity = kf.v,
+                                 .vel_variance = kf.P11,
+                                 .timestamp = now_ms};
 
         set_baro_data(&data);
 
 #if BARO_LOG_ENABLE
-        LOG_INF("KF: h=%.2f m | v=%.2f m/s | P_h=%.3f | P_v=%.3f | dt=%.3f",
-                (double)kf.h, (double)kf.v, (double)kf.P00, (double)kf.P11, (double)dt_s);
+        LOG_INF("KF: h=%.2f m | v=%.2f m/s | P_h=%.3f | P_v=%.3f | dt=%.3f", (double)kf.h,
+                (double)kf.v, (double)kf.P00, (double)kf.P11, (double)dt_s);
 #endif
-        
 
         k_sleep(K_MSEC(BARO_THREAD_PERIOD_MS));
     }
@@ -446,14 +430,6 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
 
 void start_baro_thread(void)
 {
-    k_thread_create(
-        &baro_thread,
-        baro_stack,
-        K_THREAD_STACK_SIZEOF(baro_stack),
-        baro_thread_fn,
-        NULL, NULL, NULL,
-        BARO_THREAD_PRIORITY,
-        0,
-        K_NO_WAIT
-    );
+    k_thread_create(&baro_thread, baro_stack, K_THREAD_STACK_SIZEOF(baro_stack), baro_thread_fn,
+                    NULL, NULL, NULL, BARO_THREAD_PRIORITY, 0, K_NO_WAIT);
 }

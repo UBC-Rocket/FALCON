@@ -6,10 +6,10 @@
 
 #define DT_DRV_COMPAT meas_ms5611
 
+#include "ms5611.h"
 #include <string.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/byteorder.h>
-#include "ms5611.h"
 
 #define LOG_LEVEL CONFIG_SENSOR_LOG_LEVEL
 #include <zephyr/logging/log.h>
@@ -19,74 +19,71 @@ LOG_MODULE_DECLARE(ms5611);
 
 static int ms5611_i2c_raw_cmd(const struct ms5611_config *config, uint8_t cmd)
 {
-	return i2c_write_dt(&config->bus_cfg.i2c, &cmd, 1);
+    return i2c_write_dt(&config->bus_cfg.i2c, &cmd, 1);
 }
 
 static int ms5611_i2c_reset(const struct ms5611_config *config)
 {
-	int err = ms5611_i2c_raw_cmd(config, MS5611_CMD_RESET);
+    int err = ms5611_i2c_raw_cmd(config, MS5611_CMD_RESET);
 
-	if (err < 0) {
-		return err;
-	}
+    if (err < 0) {
+        return err;
+    }
 
-	return 0;
+    return 0;
 }
 
-static int ms5611_i2c_read_prom(const struct ms5611_config *config, uint8_t cmd,
-				uint16_t *val)
+static int ms5611_i2c_read_prom(const struct ms5611_config *config, uint8_t cmd, uint16_t *val)
 {
-	uint8_t valb[2];
-	int err;
+    uint8_t valb[2];
+    int err;
 
-	err = i2c_burst_read_dt(&config->bus_cfg.i2c, cmd, valb, sizeof(valb));
-	if (err < 0) {
-		return err;
-	}
+    err = i2c_burst_read_dt(&config->bus_cfg.i2c, cmd, valb, sizeof(valb));
+    if (err < 0) {
+        return err;
+    }
 
-	*val = sys_get_be16(valb);
+    *val = sys_get_be16(valb);
 
-	return 0;
+    return 0;
 }
-
 
 static int ms5611_i2c_start_conversion(const struct ms5611_config *config, uint8_t cmd)
 {
-	return ms5611_i2c_raw_cmd(config, cmd);
+    return ms5611_i2c_raw_cmd(config, cmd);
 }
 
 static int ms5611_i2c_read_adc(const struct ms5611_config *config, uint32_t *val)
 {
-	int err;
-	uint8_t valb[3];
+    int err;
+    uint8_t valb[3];
 
-	err = i2c_burst_read_dt(&config->bus_cfg.i2c, MS5611_CMD_CONV_READ_ADC, valb, sizeof(valb));
-	if (err < 0) {
-		return err;
-	}
+    err = i2c_burst_read_dt(&config->bus_cfg.i2c, MS5611_CMD_CONV_READ_ADC, valb, sizeof(valb));
+    if (err < 0) {
+        return err;
+    }
 
-	*val = (valb[0] << 16) + (valb[1] << 8) + valb[2];
+    *val = (valb[0] << 16) + (valb[1] << 8) + valb[2];
 
-	return 0;
+    return 0;
 }
-
 
 static int ms5611_i2c_check(const struct ms5611_config *config)
 {
-	if (!device_is_ready(config->bus_cfg.i2c.bus)) {
-		LOG_DBG("I2C bus device not ready");
-		return -ENODEV;
-	}
+    if (!device_is_ready(config->bus_cfg.i2c.bus)) {
+        LOG_DBG("I2C bus device not ready");
+        return -ENODEV;
+    }
 
-	return 0;
+    return 0;
 }
 
 const struct ms5611_transfer_function ms5611_i2c_transfer_function = {
-	.bus_check = ms5611_i2c_check,
-	.reset = ms5611_i2c_reset,
-	.read_prom = ms5611_i2c_read_prom,
-	.start_conversion = ms5611_i2c_start_conversion,
-	.read_adc = ms5611_i2c_read_adc,
+    .bus_check = ms5611_i2c_check,
+    .reset = ms5611_i2c_reset,
+    .read_prom = ms5611_i2c_read_prom,
+    .start_conversion = ms5611_i2c_start_conversion,
+    .read_adc = ms5611_i2c_read_adc,
 };
 
 #endif

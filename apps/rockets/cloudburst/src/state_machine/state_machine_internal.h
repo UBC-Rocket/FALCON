@@ -9,20 +9,17 @@
 #include "data.h"
 #include "state_machine_config.h"
 
-typedef struct
-{
+typedef struct {
     uint8_t count;
 } repeated_check_t;
 
-typedef struct
-{
+typedef struct {
     float altitude_m;
     float velocity_mps;
     int64_t timestamp_ms;
 } state_sample_t;
 
-struct flight_sm
-{
+struct flight_sm {
     struct smf_ctx ctx;
     flight_state_id_t current_id;
     int64_t entry_time_ms;

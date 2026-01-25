@@ -2,32 +2,32 @@
 #define STATE_MACHINE_CONFIG_H
 
 // Standby baseline
-#define GROUND_AVERAGE_SAMPLES             100
-#define GROUND_WARMUP_MS                   2000
+#define GROUND_AVERAGE_SAMPLES 100
+#define GROUND_WARMUP_MS 2000
 
 // Ascent detection
-#define ASCENT_ALTITUDE_THRESHOLD_M        25.0f
-#define ASCENT_VELOCITY_THRESHOLD_MPS      5.0f
-#define ASCENT_CHECKS                      5
+#define ASCENT_ALTITUDE_THRESHOLD_M 25.0f
+#define ASCENT_VELOCITY_THRESHOLD_MPS 5.0f
+#define ASCENT_CHECKS 5
 
 // Mach lock
-#define MACH_LOCK_VELOCITY_THRESHOLD_MPS   150.0f
-#define MACH_LOCK_CHECKS                   10
+#define MACH_LOCK_VELOCITY_THRESHOLD_MPS 150.0f
+#define MACH_LOCK_CHECKS 10
 #define MACH_UNLOCK_VELOCITY_THRESHOLD_MPS 150.0f
-#define MACH_UNLOCK_CHECKS                 10
+#define MACH_UNLOCK_CHECKS 10
 
 // Drogue deployment
-#define DROGUE_DEPLOY_VELOCITY_THRESHOLD_MPS  5.0f
-#define DROGUE_DEPLOY_CHECKS                 5
-#define DROGUE_DEPLOY_DELAY_MS               3000
+#define DROGUE_DEPLOY_VELOCITY_THRESHOLD_MPS 5.0f
+#define DROGUE_DEPLOY_CHECKS 5
+#define DROGUE_DEPLOY_DELAY_MS 3000
 
 // Main deployment
-#define MAIN_DEPLOY_ALTITUDE_M             488.0f
-#define MAIN_DEPLOY_CHECKS                 5
+#define MAIN_DEPLOY_ALTITUDE_M 488.0f
+#define MAIN_DEPLOY_CHECKS 5
 
 // Landing detection
-#define LANDED_VELOCITY_THRESHOLD_MPS      4.0f
-#define LANDED_CHECKS                      6
-#define LANDED_CHECK_INTERVAL_MS           10000
+#define LANDED_VELOCITY_THRESHOLD_MPS 4.0f
+#define LANDED_CHECKS 6
+#define LANDED_CHECK_INTERVAL_MS 10000
 
 #endif
