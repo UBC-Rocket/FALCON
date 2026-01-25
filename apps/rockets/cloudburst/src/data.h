@@ -3,6 +3,16 @@
 
 #include <stdint.h>
 
+typedef enum
+{
+    FLIGHT_STATE_STANDBY = 0,
+    FLIGHT_STATE_ASCENT,
+    FLIGHT_STATE_MACH_LOCK,
+    FLIGHT_STATE_DROGUE_DESCENT,
+    FLIGHT_STATE_MAIN_DESCENT,
+    FLIGHT_STATE_LANDED,
+} flight_state_id_t;
+
 // Data structures for sensor data
 struct imu_data
 {
@@ -36,10 +46,17 @@ struct baro_data
     int64_t timestamp;        // Timestamp in milliseconds
 };
 
+struct state_data
+{
+    flight_state_id_t state;
+    float ground_altitude;
+    int64_t timestamp;
+};
 
 // Global instances
 extern struct imu_data g_imu_data;
 extern struct baro_data g_baro_data;
+extern struct state_data g_state_data;
 
 // Getters and setters
 void set_imu_data(const struct imu_data *src);
@@ -47,5 +64,8 @@ void get_imu_data(struct imu_data *dst);
 
 void set_baro_data(const struct baro_data *src);
 void get_baro_data(struct baro_data *dst);
+
+void set_state_data(const struct state_data *src);
+void get_state_data(struct state_data *dst);
 
 #endif
