@@ -89,23 +89,23 @@ static int load_csv_data(struct sim_baro_data *data)
     // In Zephyr native_sim, we can use standard C file I/O
     FILE *fp = fopen(DATA_FILE, "r");
     if (!fp) {
-        LOG_ERR("❌ Failed to open CSV file: %s", DATA_FILE);
+        LOG_ERR("Failed to open CSV file: %s", DATA_FILE);
         LOG_WRN("Falling back to SYNTHETIC data mode");
         return -1;
     }
     
-    LOG_INF("✓ File opened successfully");
+    LOG_INF("File opened successfully");
     
     // Allocate memory for CSV data
     data->csv_data = malloc(sizeof(struct csv_row) * MAX_CSV_ROWS);
     if (!data->csv_data) {
         fclose(fp);
-        LOG_ERR("❌ Failed to allocate memory for CSV data");
+        LOG_ERR("Failed to allocate memory for CSV data");
         LOG_WRN("Falling back to SYNTHETIC data mode");
         return -ENOMEM;
     }
     
-    LOG_INF("✓ Memory allocated for %d rows", MAX_CSV_ROWS);
+    LOG_INF("Memory allocated for %d rows", MAX_CSV_ROWS);
     
     char line[MAX_LINE_LENGTH];
     data->csv_row_count = 0;
@@ -114,12 +114,12 @@ static int load_csv_data(struct sim_baro_data *data)
     if (!fgets(line, sizeof(line), fp)) {
         fclose(fp);
         k_free(data->csv_data);
-        LOG_ERR("❌ Empty CSV file");
+        LOG_ERR("Empty CSV file");
         LOG_WRN("Falling back to SYNTHETIC data mode");
         return -1;
     }
     
-    LOG_INF("✓ Header line read");
+    LOG_INF("Header line read");
     
     // Read data rows
     while (data->csv_row_count < MAX_CSV_ROWS && fgets(line, sizeof(line), fp)) {
@@ -129,7 +129,7 @@ static int load_csv_data(struct sim_baro_data *data)
             // Store the first timestamp for relative time calculation
             if (data->csv_row_count == 0) {
                 data->csv_first_timestamp = row->timestamp_ms;
-                LOG_INF("✓ First data point: t=%lld ms, p=%.2f mbar, alt=%.2f m, T=%.2f C",
+                LOG_INF("First data point: t=%lld ms, p=%.2f mbar, alt=%.2f m, T=%.2f C",
                         row->timestamp_ms, 
                         (double)row->pressure_mbar,
                         (double)row->altitude_m,
@@ -143,7 +143,7 @@ static int load_csv_data(struct sim_baro_data *data)
     
     if (data->csv_row_count == 0) {
         k_free(data->csv_data);
-        LOG_ERR("❌ No valid data rows in CSV");
+        LOG_ERR("No valid data rows in CSV");
         LOG_WRN("Falling back to SYNTHETIC data mode");
         return -1;
     }
@@ -164,7 +164,7 @@ static int load_csv_data(struct sim_baro_data *data)
     LOG_INF("Altitude range: %.2f to %.2f m", 
             (double)data->csv_data[0].altitude_m,
             (double)last_row->altitude_m);
-    LOG_INF("Mode: 📊 CSV PLAYBACK MODE");
+    LOG_INF("Mode: CSV PLAYBACK MODE");
     LOG_INF("═══════════════════════════════════════════════");
     
     return 0;
@@ -222,7 +222,7 @@ static void interpolate_csv_data(struct sim_baro_data *data, int64_t now_ms)
         data->altitude_m = row->altitude_m;
         
         if (data->sample_count == 0 || (data->sample_count % 100 == 0)) {
-            LOG_WRN("⚠️  End of CSV data reached - holding last values");
+            LOG_WRN("End of CSV data reached - holding last values");
         }
         return;
     }
@@ -245,7 +245,7 @@ static void interpolate_csv_data(struct sim_baro_data *data, int64_t now_ms)
     
     // Periodic detailed logging (every 50 samples)
     if (data->sample_count % 50 == 0) {
-        LOG_INF("📊 CSV: idx=%zu/%zu | t=%lld ms | p=%.2f hPa | alt=%.2f m | T=%.2f C | α=%.3f",
+        LOG_INF("CSV: idx=%zu/%zu | t=%lld ms | p=%.2f hPa | alt=%.2f m | T=%.2f C | α=%.3f",
                 i, data->csv_row_count - 1,
                 target_timestamp,
                 (double)data->pressure_hpa,
@@ -287,7 +287,7 @@ static int sim_baro_sample_fetch(const struct device *dev,
             }
         } else {
             LOG_INF("DATA_FILE not defined (empty string)");
-            LOG_INF("Mode: 🔧 SYNTHETIC DATA MODE");
+            LOG_INF("Mode: SYNTHETIC DATA MODE");
             LOG_INF("═══════════════════════════════════════════════");
             
             // Initialize synthetic values
@@ -328,7 +328,7 @@ static int sim_baro_sample_fetch(const struct device *dev,
         
         // Periodic logging for synthetic mode (every 50 samples)
         if (data->sample_count % 50 == 0) {
-            LOG_INF("🔧 SYN: p=%.2f hPa | alt=%.2f m | v=%.2f m/s | T=%.2f C",
+            LOG_INF("SYN: p=%.2f hPa | alt=%.2f m | v=%.2f m/s | T=%.2f C",
                     (double)data->pressure_hpa,
                     (double)data->altitude_m,
                     (double)data->velocity_mps,
