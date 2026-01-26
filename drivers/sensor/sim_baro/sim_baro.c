@@ -18,6 +18,62 @@ LOG_MODULE_REGISTER(sim_baro, LOG_LEVEL_INF);
 #define MAX_LINE_LENGTH 512
 #define MAX_CSV_ROWS 10000
 
+// OpenRocket CSV Column definitions
+#define CSV_COL_TIMESTAMP              0
+#define CSV_COL_ALTITUDE               1
+#define CSV_COL_VERTICAL_VELO          2
+#define CSV_COL_VERTICAL_ACCEL         3
+#define CSV_COL_TOTAL_VELO             4
+#define CSV_COL_TOTAL_ACCEL            5
+#define CSV_COL_POS_EAST               6
+#define CSV_COL_POS_NORTH              7
+#define CSV_COL_GPS_LAT_DIST           8
+#define CSV_COL_GPS_LAT_DIR            9
+#define CSV_COL_GPS_LAT_VELO          10
+#define CSV_COL_GPS_LAT_ACCEL         11
+#define CSV_COL_LATITUDE              12
+#define CSV_COL_LONGITUDE             13
+#define CSV_COL_GRAVITY               14
+#define CSV_COL_ANGLE_ATTACK          15
+#define CSV_COL_ROLL_RATE             16
+#define CSV_COL_PITCH_RATE            17
+#define CSV_COL_YAW_RATE              18
+#define CSV_COL_MASS                  19
+#define CSV_COL_MOTOR_MASS            20
+#define CSV_COL_LONG_MMOI             21
+#define CSV_COL_ROT_MMOI              22
+#define CSV_COL_CP_LOCATION           23
+#define CSV_COL_CG_LOCATION           24
+#define CSV_COL_STABILITY             25
+#define CSV_COL_MACH_NUMBER           26
+#define CSV_COL_REYNOLDS_NUMBER       27
+#define CSV_COL_THRUST                28
+#define CSV_COL_DRAG                  29
+#define CSV_COL_DRAG_COEFF            30
+#define CSV_COL_AXIAL_DRAG_COEFF      31
+#define CSV_COL_FRIC_DRAG_COEFF       32
+#define CSV_COL_PRESSURE_DRAG_COEFF   33
+#define CSV_COL_BASE_DRAG_COEFF       34
+#define CSV_COL_NORM_FORCE_COEFF      35
+#define CSV_COL_PITCH_MOM_COEFF       36
+#define CSV_COL_YAW_MOM_COEFF         37
+#define CSV_COL_SIDE_FORCE_COEFF      38
+#define CSV_COL_ROLL_MOM_COEFF        39
+#define CSV_COL_ROLL_FORCING_COEFF    40
+#define CSV_COL_ROLL_DAMPING_COEFF    41
+#define CSV_COL_PITCH_DAMPING_COEFF   42
+#define CSV_COL_CORIOLIS_ACCEL        43
+#define CSV_COL_REF_LENGTH            44
+#define CSV_COL_REF_AREA              45
+#define CSV_COL_VERTICAL_ORIENT       46
+#define CSV_COL_LATERAL_ORIENT        47
+#define CSV_COL_WIND_SPEED            48
+#define CSV_COL_AIR_TEMP              49
+#define CSV_COL_AIR_PRESSURE          50
+#define CSV_COL_SPEED_OF_SOUND        51
+#define CSV_COL_SIM_TIMESTEP          52
+#define CSV_COL_COMPUTATION_TIME      53
+
 struct csv_row {
     int64_t timestamp_ms;
     float pressure_mbar;  // mbar = hPa
@@ -45,39 +101,79 @@ struct sim_baro_data {
 };
 
 
-static int parse_csv_line(const char *line, struct csv_row *row)
+
+// Helper to get Nth field from CSV line
+static const char* get_csv_field(const char *line, int field_index, char *buffer, size_t buf_size)
 {
-    char buffer[MAX_LINE_LENGTH];
-    strncpy(buffer, line, MAX_LINE_LENGTH - 1);
-    buffer[MAX_LINE_LENGTH - 1] = '\0';
+    const char *start = line;
+    const char *end;
+    int current_field = 0;
     
-    char *token;
-    char *saveptr;
-    int field = 0;
-    
-    token = strtok_r(buffer, ",", &saveptr);
-    while (token != NULL) {
-        switch (field) {
-            case 0: // Timestamp (ms)
-                row->timestamp_ms = (int64_t)atoll(token);
-                break;
-            case 2: // Altitude (m)
-                row->altitude_m = atof(token);
-                break;
-            case 4: // Pressure (mbar)
-                row->pressure_mbar = atof(token) / 100.0f; // Convert cmbar to mbar
-                break;
-            case 5: // Barom. Temp (0.01 C) - need to divide by 100
-                row->temperature_c = atof(token) / 100.0f;
-                break;
+    // Skip to the desired field
+    while (current_field < field_index && *start) {
+        if (*start == ',') {
+            current_field++;
         }
-        field++;
-        token = strtok_r(NULL, ",", &saveptr);
+        start++;
     }
     
-    // Validate we got the required fields
-    return (field >= 6) ? 0 : -1;
+    if (current_field != field_index) {
+        return NULL;  // Field not found
+    }
+    
+    // Find the end of this field
+    end = start;
+    while (*end && *end != ',' && *end != '\n' && *end != '\r') {
+        end++;
+    }
+    
+    // Copy to buffer
+    size_t len = end - start;
+    if (len >= buf_size) {
+        len = buf_size - 1;
+    }
+    
+    strncpy(buffer, start, len);
+    buffer[len] = '\0';
+    
+    return buffer;
 }
+
+
+
+// Helper macro to extract and parse a field
+#define GET_CSV_INT64(line, col, dest) do { \
+    char _buf[64]; \
+    if (!get_csv_field(line, col, _buf, sizeof(_buf))) return -1; \
+    dest = atoll(_buf); \
+} while(0)
+
+// Helper macro to extract and parse a field
+#define GET_CSV_FLOAT(line, col, dest) do { \
+    char _buf[64]; \
+    if (!get_csv_field(line, col, _buf, sizeof(_buf))) return -1; \
+    dest = atof(_buf); \
+} while(0)
+
+static int parse_csv_line(const char *line, struct csv_row *row)
+{
+    float pressure_raw, temp_raw, timestamp_raw, altitude_raw;
+    
+    GET_CSV_FLOAT(line, CSV_COL_TIMESTAMP, timestamp_raw);
+    GET_CSV_FLOAT(line, CSV_COL_ALTITUDE, altitude_raw);
+    GET_CSV_FLOAT(line, CSV_COL_AIR_PRESSURE, pressure_raw);
+    GET_CSV_FLOAT(line, CSV_COL_AIR_TEMP, temp_raw);
+    
+    // Apply unit conversions
+    row->timestamp_ms = timestamp_raw * 1000.0f; // Convert from seconds to milliseconds
+    row->altitude_m = altitude_raw;
+    row->pressure_mbar = pressure_raw;           // mbar = hPa
+    row->temperature_c = temp_raw;
+    
+    return 0;
+}
+
+
 
 static int load_csv_data(struct sim_baro_data *data)
 {
