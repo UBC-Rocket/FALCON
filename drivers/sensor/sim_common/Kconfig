@@ -1,0 +1,5 @@
+config SIM_SENSORS
+    bool "Simulated sensors for native_sim"
+    depends on DT_HAS_ZEPHYR_SIM_SENSORS_ENABLED
+    help
+      Enable simulated sensors for Zephyr's native sim
