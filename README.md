@@ -34,6 +34,29 @@ TODO
 - Zephyr Documentation: https://docs.zephyrproject.org/latest/index.html
 - Highly recommend watching this tutorial series (Videos 9, 10, and 11 shouldnt be necessary for this project): https://www.youtube.com/playlist?list=PLEBQazB0HUyTmK2zdwhaf8bLwuEaDH-52
 
+## Integration Testing
+### Zephyr's Native Sim
+#### Getting the data
+1. Follow the installation instruction for OpenRocket: https://openrocket.readthedocs.io/en/latest/setup/installation.html 
+2. Boot up OpenRocket and load the .ork file
+3. Under Flight Simulations, open a previous simulation by double clicking on the row
+4. Under Export Data, click "select all" and ensure that only the "Include field descriptions" option is checked.
+5. Click Export and save your csv file
+
+#### Running the integration test
+1. Ensure you're in the virtual environment using inside `FALCON/`:
+   - `source .venv/bin/activate` (MacOS/Linux) or `.venv\Scripts\activate.bat` (Windows)
+2. Build FALCON using Zephyr's built in native_sim board:
+   - `west build -b native_sim/native/64 app/apps/rockets/cloudburst -- -DDTC_OVERLAY_FILE="$(pwd)/boards/native_sim.overlay" -DDATA_FILE="$(pwd)/<PATH>/<DATA_FILE>.csv"`
+   - Replace `PATH` and `DATA_FILE` with the location and name of your OpenRocket csv file
+3. Run the integration test:
+   - For a realtime test, use `west build -t run`
+   - To run at the maximum speed, use `./app/build/zephyr/zephyr.exe --no-rt`
+   - To run at a custom speed, use `./app/build/zephyr/zephyr.exe --rt-ratio=2`
+
+### QEMU (WIP)
+
+
 ## Debugging
 ### Terminal debugging:
 *Should work out of the box provided your zephyr environment is set up correctly*

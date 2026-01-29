@@ -1,0 +1,3 @@
+config SIM_PYRO
+    bool "Simulated Pyro Board"
+    depends on DT_HAS_ZEPHYR_SIM_PYRO_ENABLED
