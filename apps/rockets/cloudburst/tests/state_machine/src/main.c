@@ -199,16 +199,14 @@ ZTEST(state_machine, test_standby_ground_averaging)
     float ground_altitude = 100.0f;
 
     state_machine_test_reset(0);
-    zassert_equal(state_machine_test_get_state(), FLIGHT_STATE_STANDBY,
-                  "should start in standby");
+    zassert_equal(state_machine_test_get_state(), FLIGHT_STATE_STANDBY, "should start in standby");
 
     complete_standby_setup(ground_altitude);
 
     // Verify shared state data
     struct state_data shared = {0};
     get_state_data(&shared);
-    zassert_equal(shared.state, FLIGHT_STATE_STANDBY,
-                  "shared state should match state machine");
+    zassert_equal(shared.state, FLIGHT_STATE_STANDBY, "shared state should match state machine");
     zassert_within(shared.ground_altitude, ground_altitude, 0.001f,
                    "shared ground altitude should match average");
 }
@@ -225,8 +223,7 @@ ZTEST(state_machine, test_standby_to_ascent)
     // Verify shared state data
     struct state_data shared = {0};
     get_state_data(&shared);
-    zassert_equal(shared.state, FLIGHT_STATE_ASCENT,
-                  "shared state should match state machine");
+    zassert_equal(shared.state, FLIGHT_STATE_ASCENT, "shared state should match state machine");
     zassert_within(shared.ground_altitude, ground_altitude, 0.001f,
                    "shared ground altitude should match average");
 }
@@ -250,8 +247,7 @@ ZTEST(state_machine, test_mach_lock_blocks_drogue)
     t = transition_to_mach_lock(ground_altitude, t);
 
     // Verify we're in mach lock
-    zassert_equal(state_machine_test_get_state(), FLIGHT_STATE_MACH_LOCK,
-                  "should be in mach lock");
+    zassert_equal(state_machine_test_get_state(), FLIGHT_STATE_MACH_LOCK, "should be in mach lock");
 
     // Try to trigger drogue descent with low velocity
     // This should NOT work - must exit mach lock first
@@ -294,8 +290,7 @@ ZTEST(state_machine, test_drogue_delay)
     // After delay, drogue should fire
     t = drogue_entry_time + DROGUE_DEPLOY_DELAY_MS;
     state_machine_test_step(ground_altitude + 1.0f, 0.0f, t);
-    zassert_true(state_machine_test_get_drogue_fire_triggered(),
-                 "drogue should fire after delay");
+    zassert_true(state_machine_test_get_drogue_fire_triggered(), "drogue should fire after delay");
 }
 
 ZTEST(state_machine, test_drogue_to_main_descent)

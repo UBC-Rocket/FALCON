@@ -29,8 +29,7 @@ static void imu_thread_fn(void *p1, void *p2, void *p3)
         struct sensor_value gyro[3];
         struct imu_data imu_sample;
 
-        if (sensor_sample_fetch(accel_dev) < 0 ||
-            sensor_sample_fetch(gyro_dev) < 0) {
+        if (sensor_sample_fetch(accel_dev) < 0 || sensor_sample_fetch(gyro_dev) < 0) {
             LOG_ERR("Failed to fetch samples from BMI088");
             k_sleep(K_MSEC(IMU_THREAD_PERIOD_MS));
             continue;
@@ -62,14 +61,6 @@ static void imu_thread_fn(void *p1, void *p2, void *p3)
 
 void start_imu_thread(void)
 {
-    k_thread_create(
-        &imu_thread,
-        imu_stack,
-        K_THREAD_STACK_SIZEOF(imu_stack),
-        imu_thread_fn,
-        NULL, NULL, NULL,
-        IMU_THREAD_PRIORITY,
-        0,
-        K_NO_WAIT
-    );
+    k_thread_create(&imu_thread, imu_stack, K_THREAD_STACK_SIZEOF(imu_stack), imu_thread_fn, NULL,
+                    NULL, NULL, IMU_THREAD_PRIORITY, 0, K_NO_WAIT);
 }

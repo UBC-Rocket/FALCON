@@ -13,20 +13,17 @@
 LOG_MODULE_REGISTER(logger_thread, LOG_LEVEL_INF);
 
 #define LOGGER_THREAD_STACK_SIZE 2048
-#define LOGGER_THREAD_PRIORITY   7
-#define LOGGER_THREAD_PERIOD_MS  50
-#define LOGGER_SYNC_PERIOD_MS    500
+#define LOGGER_THREAD_PRIORITY 7
+#define LOGGER_THREAD_PERIOD_MS 50
+#define LOGGER_SYNC_PERIOD_MS 500
 
 #define SDMMC_NODE DT_ALIAS(sdmmc1)
-#define DISK_DRIVE_NAME "SD"//DT_PROP(SDMMC_NODE, disk_name)
+#define DISK_DRIVE_NAME "SD" // DT_PROP(SDMMC_NODE, disk_name)
 #define MOUNT_POINT "/" DISK_DRIVE_NAME ":"
 
 static FATFS fat_fs;
 static struct fs_mount_t fatfs_mnt = {
-    .type = FS_FATFS,
-    .mnt_point = MOUNT_POINT,
-    .fs_data = &fat_fs
-};
+    .type = FS_FATFS, .mnt_point = MOUNT_POINT, .fs_data = &fat_fs};
 
 K_THREAD_STACK_DEFINE(logger_stack, LOGGER_THREAD_STACK_SIZE);
 static struct k_thread logger_thread;
@@ -34,7 +31,8 @@ static struct k_thread logger_thread;
 static struct fs_file_t log_file;
 static char log_file_name[32];
 
-static int mount_sd_card(void) {
+static int mount_sd_card(void)
+{
     int ret;
 
     // Initialize the SDMMC disk
@@ -55,13 +53,16 @@ static int mount_sd_card(void) {
     return ret;
 }
 
-static int write_csv_header(void) {
+static int write_csv_header(void)
+{
     const char *header = "Log_Timestamp(ms),"
                          "IMU_Timestamp(ms),Accel_X(m/s^2),Accel_Y(m/s^2),Accel_Z(m/s^2),"
                          "Gyro_X(rad/s),Gyro_Y(rad/s),Gyro_Z(rad/s),"
                          "Baro_Timestamp(ms),"
-                         "Baro0_Pressure(Pa),Baro0_Temperature(C),Baro0_Altitude(m),Baro0_NIS,Baro0_Faults,Baro0_Healthy,"
-                         "Baro1_Pressure(Pa),Baro1_Temperature(C),Baro1_Altitude(m),Baro1_NIS,Baro1_Faults,Baro1_Healthy,"
+                         "Baro0_Pressure(Pa),Baro0_Temperature(C),Baro0_Altitude(m),Baro0_NIS,"
+                         "Baro0_Faults,Baro0_Healthy,"
+                         "Baro1_Pressure(Pa),Baro1_Temperature(C),Baro1_Altitude(m),Baro1_NIS,"
+                         "Baro1_Faults,Baro1_Healthy,"
                          "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar,"
                          "State,State_Ground_Altitude(m),State_Timestamp(ms)\n";
     int ret;
@@ -83,7 +84,8 @@ static int write_csv_header(void) {
     return 0;
 }
 
-static int create_new_log_file(void) {
+static int create_new_log_file(void)
+{
     int ret;
     struct fs_dir_t dir;
     struct fs_dirent entry;
@@ -131,43 +133,32 @@ static int create_new_log_file(void) {
     return 0;
 }
 
-static int format_log_entry(const struct log_frame *frame, char *buffer, size_t buffer_size) {
-    return snprintf(buffer, buffer_size,
-                    "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
-                    "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-                    "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-                    "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld\n",
-                    frame->log_timestamp,
-                    frame->imu.timestamp, // IMU timestamp
-                    (double)frame->imu.accel[0],
-                    (double)frame->imu.accel[1],
-                    (double)frame->imu.accel[2],
-                    (double)frame->imu.gyro[0],
-                    (double)frame->imu.gyro[1],
-                    (double)frame->imu.gyro[2],
-                    frame->baro.timestamp, // Barometer timestamp
-                    (double)frame->baro.baro0.pressure,
-                    (double)frame->baro.baro0.temperature,
-                    (double)frame->baro.baro0.altitude,
-                    (double)frame->baro.baro0.nis,
-                    (unsigned int)frame->baro.baro0.faults,
-                    frame->baro.baro0.healthy ? 1 : 0,
-                    (double)frame->baro.baro1.pressure,
-                    (double)frame->baro.baro1.temperature,
-                    (double)frame->baro.baro1.altitude,
-                    (double)frame->baro.baro1.nis,
-                    (unsigned int)frame->baro.baro1.faults,
-                    frame->baro.baro1.healthy ? 1 : 0,
-                    (double)frame->baro.altitude,
-                    (double)frame->baro.alt_variance,
-                    (double)frame->baro.velocity,
-                    (double)frame->baro.vel_variance,
-                    (int)frame->state.state,
-                    (double)frame->state.ground_altitude,
-                    frame->state.timestamp);
+static int format_log_entry(const struct log_frame *frame, char *buffer, size_t buffer_size)
+{
+    return snprintf(
+        buffer, buffer_size,
+        "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
+        "%.3f,%.3f,%.3f,%.3f,%u,%d,"
+        "%.3f,%.3f,%.3f,%.3f,%u,%d,"
+        "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld\n",
+        frame->log_timestamp,
+        frame->imu.timestamp, // IMU timestamp
+        (double)frame->imu.accel[0], (double)frame->imu.accel[1], (double)frame->imu.accel[2],
+        (double)frame->imu.gyro[0], (double)frame->imu.gyro[1], (double)frame->imu.gyro[2],
+        frame->baro.timestamp, // Barometer timestamp
+        (double)frame->baro.baro0.pressure, (double)frame->baro.baro0.temperature,
+        (double)frame->baro.baro0.altitude, (double)frame->baro.baro0.nis,
+        (unsigned int)frame->baro.baro0.faults, frame->baro.baro0.healthy ? 1 : 0,
+        (double)frame->baro.baro1.pressure, (double)frame->baro.baro1.temperature,
+        (double)frame->baro.baro1.altitude, (double)frame->baro.baro1.nis,
+        (unsigned int)frame->baro.baro1.faults, frame->baro.baro1.healthy ? 1 : 0,
+        (double)frame->baro.altitude, (double)frame->baro.alt_variance,
+        (double)frame->baro.velocity, (double)frame->baro.vel_variance, (int)frame->state.state,
+        (double)frame->state.ground_altitude, frame->state.timestamp);
 }
 
-static void write_log_frame_to_file(const struct log_frame *frame) {
+static void write_log_frame_to_file(const struct log_frame *frame)
+{
     char log_entry[512];
     int len;
 
@@ -178,7 +169,7 @@ static void write_log_frame_to_file(const struct log_frame *frame) {
     if (len >= sizeof(log_entry)) {
         LOG_ERR("Log buffer size: %zu, Required size: %d", sizeof(log_entry), len);
         len = sizeof(log_entry) - 1; // Write only up to the buffer size (excluding null terminator)
-        return; // Abort to avoid writing incomplete log entry
+        return;                      // Abort to avoid writing incomplete log entry
     } else if (len < 0) {
         LOG_ERR("Failed to format log entry: %d", len);
         return; // Abort if formatting failed
@@ -192,7 +183,8 @@ static void write_log_frame_to_file(const struct log_frame *frame) {
     }
 }
 
-static void logger_thread_fn(void *p1, void *p2, void *p3) {
+static void logger_thread_fn(void *p1, void *p2, void *p3)
+{
     struct log_frame frame;
 
     if (mount_sd_card() < 0) {
@@ -228,15 +220,8 @@ static void logger_thread_fn(void *p1, void *p2, void *p3) {
     }
 }
 
-void start_logger_thread() {
-    k_thread_create(
-        &logger_thread,
-        logger_stack,
-        K_THREAD_STACK_SIZEOF(logger_stack),
-        logger_thread_fn,
-        NULL, NULL, NULL,
-        LOGGER_THREAD_PRIORITY,
-        0,
-        K_NO_WAIT
-    );
+void start_logger_thread()
+{
+    k_thread_create(&logger_thread, logger_stack, K_THREAD_STACK_SIZEOF(logger_stack),
+                    logger_thread_fn, NULL, NULL, NULL, LOGGER_THREAD_PRIORITY, 0, K_NO_WAIT);
 }

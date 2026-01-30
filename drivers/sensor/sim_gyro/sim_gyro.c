@@ -11,8 +11,7 @@ struct sim_gyro_data {
     float gyro_z;
 };
 
-static int sim_gyro_sample_fetch(const struct device *dev,
-                                  enum sensor_channel chan)
+static int sim_gyro_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
     struct sim_gyro_data *data = dev->data;
 
@@ -28,9 +27,8 @@ static int sim_gyro_sample_fetch(const struct device *dev,
     return 0;
 }
 
-static int sim_gyro_channel_get(const struct device *dev,
-                                 enum sensor_channel chan,
-                                 struct sensor_value *val)
+static int sim_gyro_channel_get(const struct device *dev, enum sensor_channel chan,
+                                struct sensor_value *val)
 {
     struct sim_gyro_data *data = dev->data;
 
@@ -56,18 +54,12 @@ static int sim_gyro_channel_get(const struct device *dev,
 
 static const struct sensor_driver_api sim_gyro_api = {
     .sample_fetch = sim_gyro_sample_fetch,
-    .channel_get  = sim_gyro_channel_get,
+    .channel_get = sim_gyro_channel_get,
 };
 
-#define SIM_GYRO_INIT(inst)                                 \
-    static struct sim_gyro_data sim_gyro_data_##inst;       \
-    DEVICE_DT_INST_DEFINE(inst,                             \
-                          NULL,                             \
-                          NULL,                             \
-                          &sim_gyro_data_##inst,            \
-                          NULL,                             \
-                          POST_KERNEL,                      \
-                          CONFIG_SENSOR_INIT_PRIORITY,      \
-                          &sim_gyro_api);
+#define SIM_GYRO_INIT(inst)                                                           \
+    static struct sim_gyro_data sim_gyro_data_##inst;                                 \
+    DEVICE_DT_INST_DEFINE(inst, NULL, NULL, &sim_gyro_data_##inst, NULL, POST_KERNEL, \
+                          CONFIG_SENSOR_INIT_PRIORITY, &sim_gyro_api);
 
 DT_INST_FOREACH_STATUS_OKAY(SIM_GYRO_INIT)

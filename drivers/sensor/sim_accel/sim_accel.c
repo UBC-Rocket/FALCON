@@ -11,8 +11,7 @@ struct sim_accel_data {
     float accel_z;
 };
 
-static int sim_accel_sample_fetch(const struct device *dev,
-                                   enum sensor_channel chan)
+static int sim_accel_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
     struct sim_accel_data *data = dev->data;
 
@@ -23,14 +22,13 @@ static int sim_accel_sample_fetch(const struct device *dev,
 
     data->accel_x = 0.0f + noise_x;
     data->accel_y = 0.0f + noise_y;
-    data->accel_z = -9.81f + noise_z;  // Gravity
+    data->accel_z = -9.81f + noise_z; // Gravity
 
     return 0;
 }
 
-static int sim_accel_channel_get(const struct device *dev,
-                                  enum sensor_channel chan,
-                                  struct sensor_value *val)
+static int sim_accel_channel_get(const struct device *dev, enum sensor_channel chan,
+                                 struct sensor_value *val)
 {
     struct sim_accel_data *data = dev->data;
 
@@ -56,18 +54,12 @@ static int sim_accel_channel_get(const struct device *dev,
 
 static const struct sensor_driver_api sim_accel_api = {
     .sample_fetch = sim_accel_sample_fetch,
-    .channel_get  = sim_accel_channel_get,
+    .channel_get = sim_accel_channel_get,
 };
 
-#define SIM_ACCEL_INIT(inst)                                \
-    static struct sim_accel_data sim_accel_data_##inst;     \
-    DEVICE_DT_INST_DEFINE(inst,                             \
-                          NULL,                             \
-                          NULL,                             \
-                          &sim_accel_data_##inst,           \
-                          NULL,                             \
-                          POST_KERNEL,                      \
-                          CONFIG_SENSOR_INIT_PRIORITY,      \
-                          &sim_accel_api);
+#define SIM_ACCEL_INIT(inst)                                                           \
+    static struct sim_accel_data sim_accel_data_##inst;                                \
+    DEVICE_DT_INST_DEFINE(inst, NULL, NULL, &sim_accel_data_##inst, NULL, POST_KERNEL, \
+                          CONFIG_SENSOR_INIT_PRIORITY, &sim_accel_api);
 
 DT_INST_FOREACH_STATUS_OKAY(SIM_ACCEL_INIT)

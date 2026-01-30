@@ -4,8 +4,7 @@
 #include "data.h"
 #include <stdint.h>
 
-struct log_frame
-{
+struct log_frame {
     int64_t log_timestamp;
 
     struct imu_data imu;

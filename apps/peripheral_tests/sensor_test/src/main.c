@@ -65,12 +65,11 @@ int main(void)
                 sensor_channel_get(baro_dev, SENSOR_CHAN_AMBIENT_TEMP, &temperature);
 
                 LOG_INF("Pressure: %.2f mPa, Temperature: %.2f degC",
-                        sensor_value_to_double(&pressure),
-                        sensor_value_to_double(&temperature));
+                        sensor_value_to_double(&pressure), sensor_value_to_double(&temperature));
             } else {
                 LOG_ERR("Failed to fetch data from barometer sensor");
             }
-        }   
+        }
 #endif
 
 #if TEST_GYRO_SENSOR
@@ -81,8 +80,7 @@ int main(void)
                 sensor_channel_get(gyro_dev, SENSOR_CHAN_GYRO_Z, &gyro_z);
 
                 LOG_INF("Gyroscope (rad/s): X=%.2f, Y=%.2f, Z=%.2f",
-                        sensor_value_to_double(&gyro_x),
-                        sensor_value_to_double(&gyro_y),
+                        sensor_value_to_double(&gyro_x), sensor_value_to_double(&gyro_y),
                         sensor_value_to_double(&gyro_z));
             } else {
                 LOG_ERR("Failed to fetch data from gyroscope");
@@ -98,8 +96,7 @@ int main(void)
                 sensor_channel_get(accel_dev, SENSOR_CHAN_ACCEL_Z, &accel_z);
 
                 LOG_INF("Acceleration (m/s^2): X=%.2f, Y=%.2f, Z=%.2f",
-                        sensor_value_to_double(&accel_x),
-                        sensor_value_to_double(&accel_y),
+                        sensor_value_to_double(&accel_x), sensor_value_to_double(&accel_y),
                         sensor_value_to_double(&accel_z));
             } else {
                 LOG_ERR("Failed to fetch data from accelerometer");
