@@ -1,0 +1,1 @@
+add_subdirectory_ifdef(CONFIG_SIM_PYRO sim_pyro)

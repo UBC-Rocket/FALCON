@@ -1,0 +1,3 @@
+if SPI
+rsource "sim_pyro/Kconfig"
+endif # SPI
