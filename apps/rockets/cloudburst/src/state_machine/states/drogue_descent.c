@@ -1,5 +1,8 @@
 #include "state_machine_internal.h"
 #include "state_machine_states.h"
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(state_drogue_descent, LOG_LEVEL_DBG);
 
 /**
  * @brief Evaluate transitions while in drogue descent.
@@ -11,6 +14,11 @@ static flight_state_id_t update_drogue_descent(struct flight_sm *sm, const state
 
     if (repeated_check_update(&sm->drogue_main_check, below_main_alt, MAIN_DEPLOY_CHECKS)) {
         return FLIGHT_STATE_MAIN_DESCENT;
+    }
+
+    if (below_main_alt && sm->drogue_main_check.count > 0) {
+        LOG_WRN("Main deploy condition MET but waiting for checks: %d/%d",
+                sm->drogue_main_check.count, MAIN_DEPLOY_CHECKS);
     }
 
     return FLIGHT_STATE_DROGUE_DESCENT;

@@ -2,6 +2,9 @@
 
 #include "state_machine_internal.h"
 #include "state_machine_states.h"
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(state_main_descent, LOG_LEVEL_DBG);
 
 /**
  * @brief Evaluate transitions while in main descent.
@@ -16,6 +19,10 @@ static flight_state_id_t update_main_descent(struct flight_sm *sm, const state_s
             sm->last_landed_check_ms = sample->timestamp_ms;
             if (repeated_check_update(&sm->landed_check, true, LANDED_CHECKS)) {
                 return FLIGHT_STATE_LANDED;
+            }
+            if (sm->landed_check.count > 0) {
+                LOG_WRN("Landed condition MET but waiting for checks: %d/%d",
+                        sm->landed_check.count, LANDED_CHECKS);
             }
         }
     } else {

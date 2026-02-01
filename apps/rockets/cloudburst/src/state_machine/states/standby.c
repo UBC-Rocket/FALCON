@@ -1,5 +1,8 @@
 #include "state_machine_internal.h"
 #include "state_machine_states.h"
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(state_standby, LOG_LEVEL_DBG);
 
 /**
  * @brief Evaluate transitions while in standby (includes ground averaging).
@@ -12,9 +15,15 @@ static flight_state_id_t update_standby(struct flight_sm *sm, const state_sample
         }
         sm->ground_sum_m += sample->altitude_m;
         sm->ground_samples++;
+        LOG_DBG("Ground calibration: %d/%d samples, current_alt=%.2f m, avg=%.2f m", 
+                sm->ground_samples, GROUND_AVERAGE_SAMPLES, 
+                sample->altitude_m, sm->ground_sum_m / sm->ground_samples);
+        
         if (sm->ground_samples >= GROUND_AVERAGE_SAMPLES) {
             sm->ground_altitude_m = sm->ground_sum_m / (float)sm->ground_samples;
             sm->ground_ready = true;
+            LOG_INF("Ground calibration complete: %.2f m (%d samples @ 50Hz = %d ms)", 
+                    sm->ground_altitude_m, sm->ground_samples, sm->ground_samples * 20);
         }
         return FLIGHT_STATE_STANDBY;
     }
@@ -25,6 +34,11 @@ static flight_state_id_t update_standby(struct flight_sm *sm, const state_sample
 
     if (repeated_check_update(&sm->standby_check, ascent_condition, ASCENT_CHECKS)) {
         return FLIGHT_STATE_ASCENT;
+    }
+
+    if (ascent_condition && sm->standby_check.count > 0) {
+        LOG_WRN("Ascent condition MET but waiting for checks: %d/%d", 
+                sm->standby_check.count, ASCENT_CHECKS);
     }
 
     return FLIGHT_STATE_STANDBY;
