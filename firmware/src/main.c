@@ -8,6 +8,7 @@
 #include "logger_thread.h"
 #include "state_machine/state_machine.h"
 #include "pyro/pyro_thread.h"
+#include "radio/radio_thread.h"
 #include "data.h"
 
 LOG_MODULE_REGISTER(falcon_main, LOG_LEVEL_INF);
@@ -22,6 +23,7 @@ int main(void)
     start_baro_thread();
     start_pyro_thread();
     start_state_machine_thread();
+    start_radio_thread();
 
     return 0;
 }
