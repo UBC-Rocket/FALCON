@@ -1,9 +1,9 @@
 /dts-v1/;
-#include "ubcrocket_fc_2526_r1-common.dtsi"
+#include "ubcrocket_polarity-common.dtsi"
 
 / {
-	model = "UBC Rocket Flight Controller 2025-26 Rev 1.0";
-	compatible = "ubcrocket,ubcrocket_fc_2526_r1";
+	model = "UBC Rocket Flight Controller / Project Polarity 2025-26 Rev 1.0";
+	compatible = "ubcrocket,ubcrocket_polarity";
 
 	#address-cells = <1>;
 	#size-cells = <1>;
@@ -30,7 +30,7 @@
 		};
 	};
 
-    
+
 
 	aliases {
         led0 = &green_led;
@@ -78,7 +78,7 @@
         // Required properties:  https://docs.zephyrproject.org/latest/build/dts/api/bindings/sensor/bosch%2Cbmi08x-accel-spi.html
         accel-hz = "400";
         accel-fs = <24>;
-        
+
         // Interrupt pins
         // int-gpios = <&gpiod 12 GPIO_ACTIVE_HIGH>;
         // int2-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
@@ -90,7 +90,7 @@
         compatible = "bosch,bmi08x-gyro";
         reg = <1>;
         spi-max-frequency = <10000000>;
-        
+
         // Required properties: https://docs.zephyrproject.org/latest/build/dts/api/bindings/sensor/bosch%2Cbmi08x-gyro-spi.html
         gyro-hz = "1000_116";
         gyro-fs = <2000>;
@@ -115,7 +115,7 @@
     pinctrl-0 = <&spi4_sck_pe12 &spi4_mosi_pe6 &spi4_miso_pe5>;
     pinctrl-names = "default";
     cs-gpios = <&gpiod 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>, <&gpioe 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-    
+
     baro1: ms5607@1 {
         status = "okay";
         compatible = "meas,ms5607";
