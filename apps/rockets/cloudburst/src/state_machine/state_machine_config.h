@@ -2,7 +2,7 @@
 #define STATE_MACHINE_CONFIG_H
 
 // Standby baseline
-#define GROUND_AVERAGE_SAMPLES 50  // At 50Hz = 1 second of data
+#define GROUND_AVERAGE_SAMPLES 50 // At 50Hz = 1 second of data
 
 // Ascent detection
 #define ASCENT_ALTITUDE_THRESHOLD_M 25.0f

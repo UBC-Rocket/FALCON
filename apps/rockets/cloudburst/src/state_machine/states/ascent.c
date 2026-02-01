@@ -16,8 +16,8 @@ static flight_state_id_t update_ascent(struct flight_sm *sm, const state_sample_
     }
 
     if (mach_lock && sm->mach_lock_check.count > 0) {
-        LOG_WRN("Mach lock condition MET but waiting for checks: %d/%d",
-                sm->mach_lock_check.count, MACH_LOCK_CHECKS);
+        LOG_WRN("Mach lock condition MET but waiting for checks: %d/%d", sm->mach_lock_check.count,
+                MACH_LOCK_CHECKS);
     }
 
     bool drogue = sample->velocity_mps < DROGUE_DEPLOY_VELOCITY_THRESHOLD_MPS;
