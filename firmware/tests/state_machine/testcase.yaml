@@ -1,5 +1,5 @@
 tests:
     cloudburst.state_machine:
-        platform_allow: ubcrocket_fc_2526_r1
+        platform_allow: ubcrocket_polarity
         tags: state_machine
         type: unit

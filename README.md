@@ -22,7 +22,7 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
 6. Install the Zephyr SDK: `west sdk install`
 7. Build the application (blinkytest, or sensortest, etc.):  
    - Select a board, either a custom board from this repo's '/boards' folder (check the applications CMakeLists.txt for official board compatibility), or from Zephyrs official supported boards: https://zephyr-docs.listenai.com/boards/index.html
-   - Build the application: `west build blinkytest -b ubcrocket_fc_2526_r1 -p`
+   - Build the application: `west build blinkytest -b ubcrocket_polarity -p`
 8. Connect the board to your computer and flash it: `west flash`
 
 For a nice UI based developer experience, use VS Code with the 'Zephyr IDE Extension Pack' extension
@@ -47,7 +47,7 @@ TODO
 1. Ensure you're in the virtual environment using inside `FALCON/`:
    - `source .venv/bin/activate` (MacOS/Linux) or `.venv\Scripts\activate.bat` (Windows)
 2. Build FALCON using Zephyr's built in native_sim board:
-   - `west build -b native_sim/native/64 app/apps/rockets/cloudburst -- -DDTC_OVERLAY_FILE="$(pwd)/boards/native_sim.overlay" -DDATA_FILE="$(pwd)/<PATH>/<DATA_FILE>.csv"`
+   - `west build -b native_sim/native/64 firmware -- -DDTC_OVERLAY_FILE="$(pwd)/boards/native_sim.overlay" -DDATA_FILE="$(pwd)/<PATH>/<DATA_FILE>.csv"`
    - Replace `PATH` and `DATA_FILE` with the location and name of your OpenRocket csv file
 3. Run the integration test:
    - For a realtime test, use `west build -t run`

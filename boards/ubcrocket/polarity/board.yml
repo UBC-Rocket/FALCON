@@ -1,0 +1,6 @@
+board:
+    name: ubcrocket_polarity
+    full_name: UBC Rocket Flight Controller / Project Polarity 2025-26 Rev 1.1
+    vendor: ubcrocket
+    socs:
+        - name: stm32h563xx
