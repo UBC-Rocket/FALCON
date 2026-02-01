@@ -300,16 +300,15 @@ static DEVICE_API(sensor, ms5611_api_funcs) = {
     (SPI_OP_MODE_MASTER | SPI_WORD_SET(8) | SPI_MODE_CPOL | SPI_MODE_CPHA | SPI_TRANSFER_MSB)
 
 /* Initializes a struct ms5611_config for an instance on a SPI bus. */
-#define MS5611_CONFIG_SPI(inst)                                         \
-    {                                                                   \
-        .tf = &ms5611_spi_transfer_function,                            \
-        .bus_cfg.spi = SPI_DT_SPEC_INST_GET(inst, MS5611_SPI_OPERATION) \
-    }
+#define MS5611_CONFIG_SPI(inst)           \
+    {.tf = &ms5611_spi_transfer_function, \
+     .bus_cfg.spi = SPI_DT_SPEC_INST_GET(inst, MS5611_SPI_OPERATION)}
 
 /* Initializes a struct ms5611_config for an instance on a I2C bus. */
-#define MS5611_CONFIG_I2C(inst)                                                         \
-    {                                                                                   \
-        .tf = &ms5611_i2c_transfer_function, .bus_cfg.i2c = I2C_DT_SPEC_INST_GET(inst), \
+#define MS5611_CONFIG_I2C(inst)                    \
+    {                                              \
+        .tf = &ms5611_i2c_transfer_function,       \
+        .bus_cfg.i2c = I2C_DT_SPEC_INST_GET(inst), \
     }
 
 /*

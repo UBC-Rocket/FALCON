@@ -40,17 +40,17 @@ struct sim_pyro_data {
  * @brief SPI emulator transceive function
  */
 static int sim_pyro_spi_transceive(const struct emul *emul, const struct spi_config *config,
-                                    const struct spi_buf_set *tx, const struct spi_buf_set *rx)
+                                   const struct spi_buf_set *tx, const struct spi_buf_set *rx)
 {
     struct sim_pyro_data *data = emul->data;
 
     if (!tx || tx->count == 0) {
-        //LOG_ERR("[SIM_PYRO] No TX buffers");
+        // LOG_ERR("[SIM_PYRO] No TX buffers");
         return -EINVAL;
     }
 
     if (!tx->buffers || !tx->buffers[0].buf) {
-        //LOG_ERR("[SIM_PYRO] Invalid TX buffer pointer");
+        // LOG_ERR("[SIM_PYRO] Invalid TX buffer pointer");
         return -EINVAL;
     }
 
@@ -139,21 +139,19 @@ static int sim_pyro_device_init(const struct device *dev)
     return 0;
 }
 
-#define SIM_PYRO_INIT(inst)                                              \
-    static struct sim_pyro_data sim_pyro_data_##inst = {                 \
-        .status_byte = PYRO_STATUS_DROGUE_CONT_OK | PYRO_STATUS_MAIN_CONT_OK, \
-        .drogue_fired = false,                                            \
-        .main_fired = false,                                              \
-        .drogue_fire_ack = false,                                         \
-        .main_fire_ack = false,                                           \
-    };                                                                   \
-    /* Create the actual SPI device */                                   \
-    SPI_DEVICE_DT_INST_DEFINE(inst, sim_pyro_device_init, NULL,         \
-                              NULL, NULL,                                \
-                              POST_KERNEL, CONFIG_SPI_INIT_PRIORITY,     \
-                              NULL);                                     \
-    /* Create the emulator */                                            \
-    EMUL_DT_INST_DEFINE(inst, sim_pyro_emul_init, &sim_pyro_data_##inst, \
-                        NULL, &sim_pyro_spi_api, NULL);
+#define SIM_PYRO_INIT(inst)                                                                       \
+    static struct sim_pyro_data sim_pyro_data_##inst = {                                          \
+        .status_byte = PYRO_STATUS_DROGUE_CONT_OK | PYRO_STATUS_MAIN_CONT_OK,                     \
+        .drogue_fired = false,                                                                    \
+        .main_fired = false,                                                                      \
+        .drogue_fire_ack = false,                                                                 \
+        .main_fire_ack = false,                                                                   \
+    };                                                                                            \
+    /* Create the actual SPI device */                                                            \
+    SPI_DEVICE_DT_INST_DEFINE(inst, sim_pyro_device_init, NULL, NULL, NULL, POST_KERNEL,          \
+                              CONFIG_SPI_INIT_PRIORITY, NULL);                                    \
+    /* Create the emulator */                                                                     \
+    EMUL_DT_INST_DEFINE(inst, sim_pyro_emul_init, &sim_pyro_data_##inst, NULL, &sim_pyro_spi_api, \
+                        NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(SIM_PYRO_INIT)
