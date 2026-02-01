@@ -31,7 +31,7 @@ LOG_MODULE_REGISTER(baro_thread, LOG_LEVEL_INF);
 #define GRAVITY 9.80665f
 
 /* Tuning knobs */
-#define KF_SIGMA_A 45.0f   // m/s^2, process noise standard deviation of acceleration
+#define KF_SIGMA_A 100.0f  // m/s^2, process noise standard deviation of acceleration
 #define BARO0_SIGMA_Z 1.5f // m, measurement noise standard deviation of altitude
 #define BARO1_SIGMA_Z 1.5f // m
 

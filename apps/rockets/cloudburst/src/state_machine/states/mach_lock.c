@@ -1,5 +1,8 @@
 #include "state_machine_internal.h"
 #include "state_machine_states.h"
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(state_mach_lock, LOG_LEVEL_DBG);
 
 /**
  * @brief Evaluate transitions while in mach lock.
@@ -10,6 +13,11 @@ static flight_state_id_t update_mach_lock(struct flight_sm *sm, const state_samp
 
     if (repeated_check_update(&sm->mach_unlock_check, below_unlock, MACH_UNLOCK_CHECKS)) {
         return FLIGHT_STATE_ASCENT;
+    }
+
+    if (below_unlock && sm->mach_unlock_check.count > 0) {
+        LOG_WRN("Mach unlock condition MET but waiting for checks: %d/%d",
+                sm->mach_unlock_check.count, MACH_UNLOCK_CHECKS);
     }
 
     return FLIGHT_STATE_MACH_LOCK;
