@@ -1,0 +1,12 @@
+description: Simulated Pyro Device
+
+compatible: "zephyr,sim-pyro"
+
+include: [spi-device.yaml]
+
+properties:
+  reg:
+    required: true
+  
+  spi-max-frequency:
+    required: true

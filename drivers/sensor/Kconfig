@@ -4,5 +4,4 @@ rsource "sim_baro/Kconfig"
 rsource "sim_accel/Kconfig"
 rsource "sim_gyro/Kconfig"
 rsource "sim_sdmmc/Kconfig"
-rsource "sim_pyro/Kconfig"
 endif # SENSOR
