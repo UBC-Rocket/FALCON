@@ -10,10 +10,53 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef CONFIG_ARCH_POSIX
+#include <soc.h>
+#include "cmdline.h"
+#endif
+
 LOG_MODULE_REGISTER(sim_baro, LOG_LEVEL_INF);
 
+/* Command line argument for data file path (runtime override) */
+static const char *data_file_arg;
+
+/* Compile-time default from CMake (if provided) */
 #ifndef DATA_FILE
 #define DATA_FILE ""
+#endif
+
+/* Helper to get the effective data file path */
+static const char *get_data_file_path(void)
+{
+    /* Runtime argument takes precedence over compile-time definition */
+    if (data_file_arg != NULL && strlen(data_file_arg) > 0) {
+        return data_file_arg;
+    }
+    return DATA_FILE;
+}
+
+#ifdef CONFIG_ARCH_POSIX
+static void sim_baro_register_cmdline_opts(void)
+{
+    static struct args_struct_t sim_baro_options[] = {
+        {
+            .manual = false,
+            .is_mandatory = false,
+            .is_switch = false,
+            .option = "data-file",
+            .name = "file_path",
+            .type = 's',
+            .dest = (void *)&data_file_arg,
+            .call_when_found = NULL,
+            .descript = "Path to OpenRocket CSV data file for baro simulation",
+        },
+        ARG_TABLE_ENDMARKER
+    };
+
+    native_add_command_line_opts(sim_baro_options);
+}
+
+NATIVE_TASK(sim_baro_register_cmdline_opts, PRE_BOOT_1, 1);
 #endif
 #define MAX_LINE_LENGTH 512
 #define MAX_CSV_ROWS 10000
@@ -178,12 +221,13 @@ static int load_csv_data(struct sim_baro_data *data)
     LOG_INF("═══════════════════════════════════════════════");
     LOG_INF("  CSV DATA LOADING");
     LOG_INF("═══════════════════════════════════════════════");
-    LOG_INF("Attempting to open: %s", DATA_FILE);
+    const char *data_file = get_data_file_path();
+    LOG_INF("Attempting to open: %s", data_file);
 
     // In Zephyr native_sim, we can use standard C file I/O
-    FILE *fp = fopen(DATA_FILE, "r");
+    FILE *fp = fopen(data_file, "r");
     if (!fp) {
-        LOG_ERR("Failed to open CSV file: %s", DATA_FILE);
+        LOG_ERR("Failed to open CSV file: %s", data_file);
         LOG_WRN("Falling back to SYNTHETIC data mode");
         return -1;
     }
@@ -360,9 +404,10 @@ static int sim_baro_sample_fetch(const struct device *dev, enum sensor_channel c
         LOG_INF("  SIM_BARO INITIALIZATION");
         LOG_INF("═══════════════════════════════════════════════");
 
-        // Load CSV data if DATA_FILE is defined
-        if (strlen(DATA_FILE) > 0) {
-            LOG_INF("DATA_FILE defined: \"%s\"", DATA_FILE);
+        // Load CSV data if data file is specified
+        const char *data_file_path = get_data_file_path();
+        if (strlen(data_file_path) > 0) {
+            LOG_INF("Data file specified: \"%s\"", data_file_path);
             if (load_csv_data(data) == 0) {
                 data->csv_start_time_ms = now;
                 data->csv_current_index = 0;
@@ -374,7 +419,7 @@ static int sim_baro_sample_fetch(const struct device *dev, enum sensor_channel c
                 data->altitude_m = first->altitude_m;
             }
         } else {
-            LOG_INF("DATA_FILE not defined (empty string)");
+            LOG_INF("No data file specified");
             LOG_INF("Mode: SYNTHETIC DATA MODE");
             LOG_INF("═══════════════════════════════════════════════");
 
@@ -395,7 +440,7 @@ static int sim_baro_sample_fetch(const struct device *dev, enum sensor_channel c
         dt = 0.02f;
     }
 
-    if (strlen(DATA_FILE) > 0 && data->csv_loaded) {
+    if (data->csv_loaded) {
         // Use CSV data
         interpolate_csv_data(data, now);
 
