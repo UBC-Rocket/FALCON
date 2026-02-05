@@ -47,7 +47,7 @@ TODO
 1. Ensure you're in the virtual environment using inside `FALCON/`:
    - `source .venv/bin/activate` (MacOS/Linux) or `.venv\Scripts\activate.bat` (Windows)
 2. Build FALCON using Zephyr's built in native_sim board:
-   - `west build -b native_sim/native/64 firmware -- -DDTC_OVERLAY_FILE="$(pwd)/boards/native_sim.overlay" -DDATA_FILE="$(pwd)/<PATH>/<DATA_FILE>.csv"`
+   - `west build -b native_sim/native/64 firmware -- -DDATA_FILE="$(pwd)/<PATH>/<DATA_FILE>.csv"`
    - Replace `PATH` and `DATA_FILE` with the location and name of your OpenRocket csv file
 3. Run the integration test:
    - For a realtime test, use `west build -t run`
