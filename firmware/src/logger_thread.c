@@ -18,7 +18,7 @@ LOG_MODULE_REGISTER(logger_thread, LOG_LEVEL_INF);
 #define LOGGER_SYNC_PERIOD_MS 500
 
 #define SDMMC_NODE DT_ALIAS(sdmmc1)
-#define DISK_DRIVE_NAME "SD" // DT_PROP(SDMMC_NODE, disk_name)
+#define DISK_DRIVE_NAME DT_PROP(SDMMC_NODE, disk_name)
 #define MOUNT_POINT "/" DISK_DRIVE_NAME ":"
 
 static FATFS fat_fs;

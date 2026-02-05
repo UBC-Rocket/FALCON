@@ -40,6 +40,7 @@
         baro0 = &baro0;
         baro1 = &baro1;
         pyro0 = &pyro0;
+        sdmmc1 = &sdmmc1;
     };
 };
 
