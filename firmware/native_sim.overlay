@@ -1,0 +1,58 @@
+/ {
+    sim_baro0: sim_baro_0 {
+        compatible = "zephyr,sim-baro";
+        status = "okay";
+    };
+
+    sim_baro1: sim_baro_1 {
+        compatible = "zephyr,sim-baro";
+        status = "okay";
+    };
+
+    sim_accel0: sim_accel_0 {
+        compatible = "zephyr,sim-accel";
+        status = "okay";
+    };
+
+    sim_gyro0: sim_gyro_0 {
+        compatible = "zephyr,sim-gyro";
+        status = "okay";
+    };
+
+    sim_sdmmc1: sim_sdmmc_1 {
+        compatible = "zephyr,posix-disk";
+        status = "okay";
+        disk-name = "SD";
+        backing-store = "/tmp/cloudburst_sd.img";
+        sector-size = <512>;
+        sector-count = <131072>; /* 64 MB */
+    };
+
+    sim_ramdisk0: ramdisk {
+        compatible = "zephyr,ram-disk";
+        disk-name = "RAM";
+        sector-size = <512>;
+        sector-count = <2048>; /* 1 MB */
+    };
+
+    aliases {
+        baro0 = &sim_baro0;
+        baro1 = &sim_baro1;
+        accel0 = &sim_accel0;
+        gyro0 = &sim_gyro0;
+        pyro0 = &sim_pyro0;
+        sdmmc1 = &sim_sdmmc1;
+        ramdisk0 = &sim_ramdisk0;
+    };
+};
+
+&spi0 {
+    status = "okay";
+
+    sim_pyro0: sim_pyro0@0 {
+        compatible = "zephyr,sim-pyro";
+        reg = <0>;
+        spi-max-frequency = <1000000>;
+        status = "okay";
+    };
+};
