@@ -76,17 +76,12 @@ static void inject_and_wait(float altitude, float velocity, int duration_ms)
 
 ZTEST(integration, test_full_flight_sequence)
 {
+    bool test_failed = false;
+    pyro_status_t pyro_status;
+    
     LOG_INF("========================================");
     LOG_INF("Starting Full Flight Integration Test");
     LOG_INF("========================================");
-    LOG_INF("Using constants from state_machine_config.h:");
-    LOG_INF("  ASCENT_ALTITUDE_THRESHOLD_M = %.2f", ASCENT_ALTITUDE_THRESHOLD_M);
-    LOG_INF("  ASCENT_VELOCITY_THRESHOLD_MPS = %.2f", ASCENT_VELOCITY_THRESHOLD_MPS);
-    LOG_INF("  MACH_LOCK_VELOCITY_THRESHOLD_MPS = %.2f", MACH_LOCK_VELOCITY_THRESHOLD_MPS);
-    LOG_INF("  DROGUE_DEPLOY_VELOCITY_THRESHOLD_MPS = %.2f", DROGUE_DEPLOY_VELOCITY_THRESHOLD_MPS);
-    LOG_INF("  DROGUE_DEPLOY_DELAY_MS = %d", DROGUE_DEPLOY_DELAY_MS);
-    LOG_INF("  MAIN_DEPLOY_ALTITUDE_M = %.2f", MAIN_DEPLOY_ALTITUDE_M);
-    LOG_INF("  LANDED_VELOCITY_THRESHOLD_MPS = %.2f", LANDED_VELOCITY_THRESHOLD_MPS);
 
     /* Start threads */
     LOG_INF("\nStarting state machine and pyro threads...");
@@ -128,7 +123,23 @@ ZTEST(integration, test_full_flight_sequence)
     inject_and_wait(1500.0, DROGUE_DEPLOY_VELOCITY_THRESHOLD_MPS - 1.0, 
                     DROGUE_DEPLOY_DELAY_MS + 2000);  /* 3s delay + 2s buffer */
 
-
+    /* Check drogue pyro status */
+    k_sleep(K_SECONDS(2));  /* Give more time for pyro to react and send acknowledgment */
+    pyro_get_status(&pyro_status);
+    if (pyro_status.drogue_fired && !pyro_status.drogue_fail && pyro_status.drogue_fire_ack) {
+        LOG_INF("Drogue fired successfully with ACK");
+    } else {
+        if (pyro_status.drogue_fail) {
+            LOG_ERR("Drogue fire FAILED");
+        }
+        if (!pyro_status.drogue_fired) {
+            LOG_ERR("Drogue did not fire");
+        }
+        if (!pyro_status.drogue_fire_ack) {
+            LOG_ERR("Drogue no ACK received");
+        }
+        test_failed = true;
+    }
 
     // Main descent
     LOG_INF("\n=== PHASE 6: MAIN DESCENT ===");
@@ -136,6 +147,22 @@ ZTEST(integration, test_full_flight_sequence)
     LOG_INF("Main should fire immediately...");
     inject_test_data(MAIN_DEPLOY_ALTITUDE_M - 1.0, -8.0, true);
     k_sleep(K_SECONDS(5));
+    
+    /* Check main pyro status */
+    k_sleep(K_SECONDS(2));  /* Give more time for pyro to react and send acknowledgment */
+    pyro_get_status(&pyro_status);
+    if (pyro_status.main_fired && !pyro_status.main_fail && pyro_status.main_fire_ack) {
+        LOG_INF("Main fired successfully with ACK");
+    } else {
+        if (pyro_status.main_fail) {
+            LOG_ERR("Main fire FAILED");
+        } else if (!pyro_status.main_fired) {
+            LOG_ERR("Main did not fire");
+        } else if (!pyro_status.main_fire_ack) {
+            LOG_ERR("Main fired but no ACK received");
+        }
+        test_failed = true;
+    }
 
     // Landed
     LOG_INF("\n=== PHASE 7: LANDED ===");
@@ -145,6 +172,19 @@ ZTEST(integration, test_full_flight_sequence)
                     LANDED_CHECKS * LANDED_CHECK_INTERVAL_MS + 1.0);
     
     k_sleep(K_SECONDS(1));
+    
+    /* Final test result */
+    LOG_INF("\n========================================");
+    if (test_failed) {
+        LOG_ERR("INTEGRATION TEST FAILED");
+        LOG_ERR("One or more pyro commands did not execute successfully");
+        LOG_INF("========================================");
+        zassert_false(test_failed, "Pyro command(s) failed during flight sequence");
+    } else {
+        LOG_INF("✓ INTEGRATION TEST PASSED");
+        LOG_INF("All pyro commands executed successfully");
+        LOG_INF("========================================");
+    }
 }
 
 ZTEST_SUITE(integration, NULL, NULL, NULL, NULL, NULL);
