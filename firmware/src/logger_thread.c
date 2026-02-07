@@ -2,13 +2,16 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/device.h>
-#include <zephyr/storage/disk_access.h>
-#include <zephyr/fs/fs.h>
 #include <stdio.h>
 #include <string.h>
-#include <ff.h>
 #include "data.h"
 #include "log_format.h"
+
+#ifndef CONFIG_BOARD_NATIVE_SIM
+#include <zephyr/storage/disk_access.h>
+#include <zephyr/fs/fs.h>
+#include <ff.h>
+#endif
 
 LOG_MODULE_REGISTER(logger_thread, LOG_LEVEL_INF);
 
@@ -17,24 +20,50 @@ LOG_MODULE_REGISTER(logger_thread, LOG_LEVEL_INF);
 #define LOGGER_THREAD_PERIOD_MS 50
 #define LOGGER_SYNC_PERIOD_MS 500
 
+#ifdef CONFIG_BOARD_NATIVE_SIM
+// Use standard POSIX file I/O for native_sim
+#include <unistd.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+#define MOUNT_POINT "/tmp/zephyr_logs"
+static FILE *log_file_ptr = NULL;
+
+#else
+// Use Zephyr FS API for real hardware
 #define SDMMC_NODE DT_ALIAS(sdmmc1)
 #define DISK_DRIVE_NAME DT_PROP(SDMMC_NODE, disk_name)
 #define MOUNT_POINT "/" DISK_DRIVE_NAME ":"
 
 static FATFS fat_fs;
 static struct fs_mount_t fatfs_mnt = {
-    .type = FS_FATFS, .mnt_point = MOUNT_POINT, .fs_data = &fat_fs};
+    .type = FS_FATFS, 
+    .mnt_point = MOUNT_POINT, 
+    .fs_data = &fat_fs
+};
+
+static struct fs_file_t log_file;
+#endif
 
 K_THREAD_STACK_DEFINE(logger_stack, LOGGER_THREAD_STACK_SIZE);
 static struct k_thread logger_thread;
 
-static struct fs_file_t log_file;
-static char log_file_name[32];
+static char log_file_name[128];
 
-static int mount_sd_card(void)
+static int mount_filesystem(void)
 {
+#ifdef CONFIG_BOARD_NATIVE_SIM
+    // Create directory if it doesn't exist
+    struct stat st = {0};
+    if (stat(MOUNT_POINT, &st) == -1) {
+        mkdir(MOUNT_POINT, 0755);
+    }
+    LOG_INF("Using POSIX filesystem at %s", MOUNT_POINT);
+    return 0;
+#else
     int ret;
-
+    
     // Initialize the SDMMC disk
     ret = disk_access_ioctl(DISK_DRIVE_NAME, DISK_IOCTL_CTRL_INIT, NULL);
     if (ret < 0) {
@@ -45,12 +74,12 @@ static int mount_sd_card(void)
     // Mount the FATFS file system
     ret = fs_mount(&fatfs_mnt);
     if (ret == 0) {
-        LOG_INF("File system mounted at %s", fatfs_mnt.mnt_point);
+        LOG_INF("File system mounted at %s", MOUNT_POINT);
     } else {
         LOG_ERR("File system mount failed: %d", ret);
     }
-
     return ret;
+#endif
 }
 
 static int write_csv_header(void)
@@ -65,33 +94,71 @@ static int write_csv_header(void)
                          "Baro1_Faults,Baro1_Healthy,"
                          "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar,"
                          "State,State_Ground_Altitude(m),State_Timestamp(ms)\n";
-    int ret;
 
-    // Write the header row to the log file
-    ret = fs_write(&log_file, header, strlen(header));
+#ifdef CONFIG_BOARD_NATIVE_SIM
+    size_t written = fwrite(header, 1, strlen(header), log_file_ptr);
+    if (written != strlen(header)) {
+        LOG_ERR("Failed to write header");
+        return -1;
+    }
+    fflush(log_file_ptr);
+    return 0;
+#else
+    int ret = fs_write(&log_file, header, strlen(header));
     if (ret < 0) {
         LOG_ERR("Failed to write header to log file: %d", ret);
         return ret;
     }
-
-    // Flush the header to the SD card
+    
     ret = fs_sync(&log_file);
     if (ret < 0) {
         LOG_ERR("Failed to sync log file after writing header: %d", ret);
         return ret;
     }
-
     return 0;
+#endif
 }
 
 static int create_new_log_file(void)
 {
+    int file_count = 0;
+
+#ifdef CONFIG_BOARD_NATIVE_SIM
+    DIR *dir = opendir(MOUNT_POINT);
+    if (dir) {
+        struct dirent *entry;
+        struct stat st;
+        char filepath[256];
+        
+        while ((entry = readdir(dir)) != NULL) {
+            // Skip "." and ".." entries
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            
+            // Build full path and check if it's a regular file
+            snprintf(filepath, sizeof(filepath), "%s/%s", MOUNT_POINT, entry->d_name);
+            if (stat(filepath, &st) == 0 && S_ISREG(st.st_mode)) {
+                file_count++;
+            }
+        }
+        closedir(dir);
+    }
+    
+    snprintf(log_file_name, sizeof(log_file_name), "%s/log_%d.csv", MOUNT_POINT, file_count);
+    
+    log_file_ptr = fopen(log_file_name, "w");
+    if (!log_file_ptr) {
+        LOG_ERR("Failed to open log file: %s", log_file_name);
+        return -1;
+    }
+    
+    LOG_INF("Log file created: %s", log_file_name);
+#else
     int ret;
     struct fs_dir_t dir;
     struct fs_dirent entry;
-    int file_count = 0;
 
-    // Open the directory
     fs_dir_t_init(&dir);
     ret = fs_opendir(&dir, MOUNT_POINT);
     if (ret < 0) {
@@ -99,38 +166,26 @@ static int create_new_log_file(void)
         return ret;
     }
 
-    // Count the number of files in the directory
     while (fs_readdir(&dir, &entry) == 0 && entry.name[0] != '\0') {
         if (entry.type == FS_DIR_ENTRY_FILE) {
             file_count++;
         }
     }
-
     fs_closedir(&dir);
 
-    // Generate a new log file name
     snprintf(log_file_name, sizeof(log_file_name), MOUNT_POINT "/log_%d.csv", file_count);
-
-    // Initialize the file
+    
     fs_file_t_init(&log_file);
-
-    // Open the file for appending (create if it doesn't exist)
     ret = fs_open(&log_file, log_file_name, FS_O_CREATE | FS_O_APPEND | FS_O_WRITE);
     if (ret < 0) {
         LOG_ERR("Failed to open log file: %d", ret);
         return ret;
     }
-
+    
     LOG_INF("Log file created: %s", log_file_name);
+#endif
 
-    // Attempt to write the header row to the log file
-    ret = write_csv_header();
-    if (ret < 0) {
-        LOG_ERR("Failed to write header to log file. Continuing without header.");
-        // Do not close the file; allow further writes to continue
-    }
-
-    return 0;
+    return write_csv_header();
 }
 
 static int format_log_entry(const struct log_frame *frame, char *buffer, size_t buffer_size)
@@ -142,10 +197,10 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
         "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld\n",
         frame->log_timestamp,
-        frame->imu.timestamp, // IMU timestamp
+        frame->imu.timestamp,
         (double)frame->imu.accel[0], (double)frame->imu.accel[1], (double)frame->imu.accel[2],
         (double)frame->imu.gyro[0], (double)frame->imu.gyro[1], (double)frame->imu.gyro[2],
-        frame->baro.timestamp, // Barometer timestamp
+        frame->baro.timestamp,
         (double)frame->baro.baro0.pressure, (double)frame->baro.baro0.temperature,
         (double)frame->baro.baro0.altitude, (double)frame->baro.baro0.nis,
         (unsigned int)frame->baro.baro0.faults, frame->baro.baro0.healthy ? 1 : 0,
@@ -160,34 +215,34 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
 static void write_log_frame_to_file(const struct log_frame *frame)
 {
     char log_entry[512];
-    int len;
+    int len = format_log_entry(frame, log_entry, sizeof(log_entry));
 
-    // Format the log entry as CSV
-    len = format_log_entry(frame, log_entry, sizeof(log_entry));
-
-    // Check if the formatted string was truncated
     if (len >= sizeof(log_entry)) {
         LOG_ERR("Log buffer size: %zu, Required size: %d", sizeof(log_entry), len);
-        len = sizeof(log_entry) - 1; // Write only up to the buffer size (excluding null terminator)
-        return;                      // Abort to avoid writing incomplete log entry
+        return;
     } else if (len < 0) {
         LOG_ERR("Failed to format log entry: %d", len);
-        return; // Abort if formatting failed
+        return;
     }
 
-    // Write the log entry to the file
+#ifdef CONFIG_BOARD_NATIVE_SIM
+    size_t written = fwrite(log_entry, 1, len, log_file_ptr);
+    if (written != (size_t)len) {
+        LOG_ERR("Failed to write to log file");
+    }
+#else
     int ret = fs_write(&log_file, log_entry, len);
     if (ret < 0) {
         LOG_ERR("Failed to write to log file: %d", ret);
-        return;
     }
+#endif
 }
 
 static void logger_thread_fn(void *p1, void *p2, void *p3)
 {
     struct log_frame frame;
 
-    if (mount_sd_card() < 0) {
+    if (mount_filesystem() < 0) {
         return;
     }
 
@@ -198,22 +253,23 @@ static void logger_thread_fn(void *p1, void *p2, void *p3)
     int64_t last_sync_ms = k_uptime_get();
 
     while (1) {
-        // Collect data
         frame.log_timestamp = k_uptime_get();
         get_imu_data(&frame.imu);
         get_baro_data(&frame.baro);
         get_state_data(&frame.state);
 
-        // Write the data to the log file
         write_log_frame_to_file(&frame);
 
         if ((frame.log_timestamp - last_sync_ms) >= LOGGER_SYNC_PERIOD_MS) {
+#ifdef CONFIG_BOARD_NATIVE_SIM
+            fflush(log_file_ptr);
+#else
             int ret = fs_sync(&log_file);
             if (ret < 0) {
                 LOG_ERR("Failed to sync log file: %d", ret);
-            } else {
-                last_sync_ms = frame.log_timestamp;
             }
+#endif
+            last_sync_ms = frame.log_timestamp;
         }
 
         k_sleep(K_MSEC(LOGGER_THREAD_PERIOD_MS));
