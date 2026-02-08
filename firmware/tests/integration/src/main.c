@@ -77,7 +77,7 @@ static void inject_and_wait(float altitude, float velocity, int duration_ms)
 ZTEST(integration, test_full_flight_sequence)
 {
     bool test_failed = false;
-    pyro_status_t pyro_status;
+    struct pyro_data pyro_status;
     
     LOG_INF("========================================");
     LOG_INF("Starting Full Flight Integration Test");
@@ -125,7 +125,7 @@ ZTEST(integration, test_full_flight_sequence)
 
     /* Check drogue pyro status */
     k_sleep(K_SECONDS(2));  /* Give more time for pyro to react and send acknowledgment */
-    pyro_get_status(&pyro_status);
+    get_pyro_data(&pyro_status);
     if (pyro_status.drogue_fired && !pyro_status.drogue_fail && pyro_status.drogue_fire_ack) {
         LOG_INF("Drogue fired successfully with ACK");
     } else {
@@ -150,7 +150,7 @@ ZTEST(integration, test_full_flight_sequence)
     
     /* Check main pyro status */
     k_sleep(K_SECONDS(2));  /* Give more time for pyro to react and send acknowledgment */
-    pyro_get_status(&pyro_status);
+    get_pyro_data(&pyro_status);
     if (pyro_status.main_fired && !pyro_status.main_fail && pyro_status.main_fire_ack) {
         LOG_INF("Main fired successfully with ACK");
     } else {

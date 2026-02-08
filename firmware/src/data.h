@@ -2,6 +2,7 @@
 #define DATA_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum {
     FLIGHT_STATE_STANDBY = 0,
@@ -48,10 +49,26 @@ struct state_data {
     int64_t timestamp;
 };
 
+struct pyro_data {
+    uint8_t status_byte;
+    int64_t timestamp;
+    bool drogue_fired;
+    bool main_fired;
+    bool drogue_fail;
+    bool main_fail;
+    bool drogue_cont_ok;
+    bool main_cont_ok;
+    bool drogue_fire_ack;
+    bool main_fire_ack;
+    bool drogue_fire_requested;
+    bool main_fire_requested;
+};
+
 // Global instances
 extern struct imu_data g_imu_data;
 extern struct baro_data g_baro_data;
 extern struct state_data g_state_data;
+extern struct pyro_data g_pyro_data;
 
 // Getters and setters
 void set_imu_data(const struct imu_data *src);
@@ -62,5 +79,8 @@ void get_baro_data(struct baro_data *dst);
 
 void set_state_data(const struct state_data *src);
 void get_state_data(struct state_data *dst);
+
+void set_pyro_data(const struct pyro_data *src);
+void get_pyro_data(struct pyro_data *dst);
 
 #endif

@@ -19,20 +19,6 @@
 #define PYRO_CMD_FIRE_MAIN 0x02
 #define PYRO_CMD_STATUS_REQ 0x55
 
-// Pyro status structure
-typedef struct {
-    uint8_t status_byte;
-    int64_t timestamp_ms;
-    bool drogue_fired;
-    bool main_fired;
-    bool drogue_fail;
-    bool main_fail;
-    bool drogue_cont_ok;
-    bool main_cont_ok;
-    bool drogue_fire_ack;
-    bool main_fire_ack;
-} pyro_status_t;
-
 /**
  * @brief Start the pyro communication thread
  */
@@ -49,23 +35,5 @@ int pyro_fire_drogue(void);
  * @return 0 on success, negative errno on failure
  */
 int pyro_fire_main(void);
-
-/**
- * @brief Get the current pyro status
- * @param status Pointer to status structure to fill
- */
-void pyro_get_status(pyro_status_t *status);
-
-/**
- * @brief Check if drogue continuity is OK
- * @return true if continuity is good
- */
-bool pyro_is_drogue_continuity_ok(void);
-
-/**
- * @brief Check if main continuity is OK
- * @return true if continuity is good
- */
-bool pyro_is_main_continuity_ok(void);
 
 #endif /* PYRO_THREAD_H */
