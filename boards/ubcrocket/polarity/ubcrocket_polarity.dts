@@ -40,6 +40,7 @@
         baro0 = &baro0;
         baro1 = &baro1;
         pyro0 = &pyro0;
+        radio0 = &radio0;
         sdmmc1 = &sdmmc1;
     };
 };
@@ -50,12 +51,22 @@
     pinctrl-0 = <&spi1_sck_pa5 &spi1_mosi_pa7 &spi1_miso_pa6>;
     pinctrl-names = "default";
 
-    // Chip select pin for Pyro board on PE14 (i think)
-    cs-gpios = <&gpioe 14 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    cs-gpios = <&gpioe 14 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>,
+               <&gpioe 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+
+    // Pyro board CS on PE14
     pyro0: pyro0@0 {
         status = "okay";
-        compatible = "vnd,spi-device"; //  TODO: Could write a custom binding instead of using this test one with raw spi commands
+        compatible = "vnd,spi-device";
         reg = <0>;
+        spi-max-frequency = <1000000>;
+    };
+
+    // Radio board CS on PE8
+    radio0: radio0@1 {
+        status = "okay";
+        compatible = "vnd,spi-device";
+        reg = <1>;
         spi-max-frequency = <1000000>;
     };
 };
