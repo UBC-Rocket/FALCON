@@ -38,10 +38,7 @@ static FILE *log_file_ptr = NULL;
 
 static FATFS fat_fs;
 static struct fs_mount_t fatfs_mnt = {
-    .type = FS_FATFS, 
-    .mnt_point = MOUNT_POINT, 
-    .fs_data = &fat_fs
-};
+    .type = FS_FATFS, .mnt_point = MOUNT_POINT, .fs_data = &fat_fs};
 
 static struct fs_file_t log_file;
 #endif
@@ -63,7 +60,7 @@ static int mount_filesystem(void)
     return 0;
 #else
     int ret;
-    
+
     // Initialize the SDMMC disk
     ret = disk_access_ioctl(DISK_DRIVE_NAME, DISK_IOCTL_CTRL_INIT, NULL);
     if (ret < 0) {
@@ -109,7 +106,7 @@ static int write_csv_header(void)
         LOG_ERR("Failed to write header to log file: %d", ret);
         return ret;
     }
-    
+
     ret = fs_sync(&log_file);
     if (ret < 0) {
         LOG_ERR("Failed to sync log file after writing header: %d", ret);
@@ -129,13 +126,13 @@ static int create_new_log_file(void)
         struct dirent *entry;
         struct stat st;
         char filepath[256];
-        
+
         while ((entry = readdir(dir)) != NULL) {
             // Skip "." and ".." entries
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                 continue;
             }
-            
+
             // Build full path and check if it's a regular file
             snprintf(filepath, sizeof(filepath), "%s/%s", MOUNT_POINT, entry->d_name);
             if (stat(filepath, &st) == 0 && S_ISREG(st.st_mode)) {
@@ -144,15 +141,15 @@ static int create_new_log_file(void)
         }
         closedir(dir);
     }
-    
+
     snprintf(log_file_name, sizeof(log_file_name), "%s/log_%d.csv", MOUNT_POINT, file_count);
-    
+
     log_file_ptr = fopen(log_file_name, "w");
     if (!log_file_ptr) {
         LOG_ERR("Failed to open log file: %s", log_file_name);
         return -1;
     }
-    
+
     LOG_INF("Log file created: %s", log_file_name);
 #else
     int ret;
@@ -174,14 +171,14 @@ static int create_new_log_file(void)
     fs_closedir(&dir);
 
     snprintf(log_file_name, sizeof(log_file_name), MOUNT_POINT "/log_%d.csv", file_count);
-    
+
     fs_file_t_init(&log_file);
     ret = fs_open(&log_file, log_file_name, FS_O_CREATE | FS_O_APPEND | FS_O_WRITE);
     if (ret < 0) {
         LOG_ERR("Failed to open log file: %d", ret);
         return ret;
     }
-    
+
     LOG_INF("Log file created: %s", log_file_name);
 #endif
 
@@ -196,11 +193,9 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
         "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld\n",
-        frame->log_timestamp,
-        frame->imu.timestamp,
-        (double)frame->imu.accel[0], (double)frame->imu.accel[1], (double)frame->imu.accel[2],
-        (double)frame->imu.gyro[0], (double)frame->imu.gyro[1], (double)frame->imu.gyro[2],
-        frame->baro.timestamp,
+        frame->log_timestamp, frame->imu.timestamp, (double)frame->imu.accel[0],
+        (double)frame->imu.accel[1], (double)frame->imu.accel[2], (double)frame->imu.gyro[0],
+        (double)frame->imu.gyro[1], (double)frame->imu.gyro[2], frame->baro.timestamp,
         (double)frame->baro.baro0.pressure, (double)frame->baro.baro0.temperature,
         (double)frame->baro.baro0.altitude, (double)frame->baro.baro0.nis,
         (unsigned int)frame->baro.baro0.faults, frame->baro.baro0.healthy ? 1 : 0,
