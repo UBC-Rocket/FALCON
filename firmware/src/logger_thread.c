@@ -32,7 +32,7 @@ static FILE *log_file_ptr = NULL;
 
 #else
 // Use Zephyr FS API for real hardware
-#define SDMMC_NODE DT_NODELABEL(sdmmc1)
+#define SDMMC_NODE DT_ALIAS(sdmmc1)
 #define DISK_DRIVE_NAME DT_PROP(SDMMC_NODE, disk_name)
 #define MOUNT_POINT "/" DISK_DRIVE_NAME ":"
 
