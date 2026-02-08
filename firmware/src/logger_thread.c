@@ -64,7 +64,11 @@ static int write_csv_header(void)
                          "Baro1_Pressure(Pa),Baro1_Temperature(C),Baro1_Altitude(m),Baro1_NIS,"
                          "Baro1_Faults,Baro1_Healthy,"
                          "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar,"
-                         "State,State_Ground_Altitude(m),State_Timestamp(ms)\n";
+                         "State,State_Ground_Altitude(m),State_Timestamp(ms),"
+                         "Pyro_Status,Pyro_Timestamp(ms),"
+                         "Drogue_Fired,Main_Fired,Drogue_Fail,Main_Fail,"
+                         "Drogue_Cont_OK,Main_Cont_OK,Drogue_Fire_ACK,Main_Fire_ACK,"
+                         "Drogue_Fire_Requested,Main_Fire_Requested\n";
     int ret;
 
     // Write the header row to the log file
@@ -140,7 +144,8 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-        "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld\n",
+        "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld,"
+        "%u,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
         frame->log_timestamp,
         frame->imu.timestamp, // IMU timestamp
         (double)frame->imu.accel[0], (double)frame->imu.accel[1], (double)frame->imu.accel[2],
@@ -154,7 +159,13 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         (unsigned int)frame->baro.baro1.faults, frame->baro.baro1.healthy ? 1 : 0,
         (double)frame->baro.altitude, (double)frame->baro.alt_variance,
         (double)frame->baro.velocity, (double)frame->baro.vel_variance, (int)frame->state.state,
-        (double)frame->state.ground_altitude, frame->state.timestamp);
+        (double)frame->state.ground_altitude, frame->state.timestamp,
+        (unsigned int)frame->pyro.status_byte, frame->pyro.timestamp,
+        frame->pyro.drogue_fired ? 1 : 0, frame->pyro.main_fired ? 1 : 0,
+        frame->pyro.drogue_fail ? 1 : 0, frame->pyro.main_fail ? 1 : 0,
+        frame->pyro.drogue_cont_ok ? 1 : 0, frame->pyro.main_cont_ok ? 1 : 0,
+        frame->pyro.drogue_fire_ack ? 1 : 0, frame->pyro.main_fire_ack ? 1 : 0,
+        frame->pyro.drogue_fire_requested ? 1 : 0, frame->pyro.main_fire_requested ? 1 : 0);
 }
 
 static void write_log_frame_to_file(const struct log_frame *frame)
@@ -203,6 +214,7 @@ static void logger_thread_fn(void *p1, void *p2, void *p3)
         get_imu_data(&frame.imu);
         get_baro_data(&frame.baro);
         get_state_data(&frame.state);
+        get_pyro_data(&frame.pyro);
 
         // Write the data to the log file
         write_log_frame_to_file(&frame);

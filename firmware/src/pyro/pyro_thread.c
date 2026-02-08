@@ -4,6 +4,7 @@
 #include <zephyr/drivers/spi.h>
 #include <zephyr/logging/log.h>
 #include "pyro_thread.h"
+#include "data.h"
 
 LOG_MODULE_REGISTER(pyro_thread, LOG_LEVEL_INF);
 
@@ -16,26 +17,9 @@ LOG_MODULE_REGISTER(pyro_thread, LOG_LEVEL_INF);
 K_THREAD_STACK_DEFINE(pyro_stack, PYRO_THREAD_STACK_SIZE);
 static struct k_thread pyro_thread_data;
 
-// Mutex for thread-safe access to shared data
-static K_MUTEX_DEFINE(pyro_mutex);
-
 // Message queue for pyro commands
 #define PYRO_CMD_QUEUE_SIZE 10
 K_MSGQ_DEFINE(pyro_cmd_queue, sizeof(uint8_t), PYRO_CMD_QUEUE_SIZE, 4);
-
-// Latest pyro status
-static pyro_status_t latest_status = {
-    .status_byte = 0,
-    .timestamp_ms = 0,
-    .drogue_fired = false,
-    .main_fired = false,
-    .drogue_fail = false,
-    .main_fail = false,
-    .drogue_cont_ok = false,
-    .main_cont_ok = false,
-    .drogue_fire_ack = false,
-    .main_fire_ack = false,
-};
 
 // SPI device configuration
 static const struct spi_dt_spec pyro_spi =
@@ -95,10 +79,10 @@ static int pyro_spi_transact(uint8_t cmd, uint8_t *status_out)
 /**
  * @brief Parse status byte and update status structure
  */
-static void parse_status_byte(uint8_t status_byte, pyro_status_t *status)
+static void parse_status_byte(uint8_t status_byte, struct pyro_data *status)
 {
     status->status_byte = status_byte;
-    status->timestamp_ms = k_uptime_get();
+    status->timestamp = k_uptime_get();
     status->drogue_fired = (status_byte & PYRO_STATUS_DROGUE_FIRED) != 0;
     status->main_fired = (status_byte & PYRO_STATUS_MAIN_FIRED) != 0;
     status->drogue_fail = (status_byte & PYRO_STATUS_DROGUE_FAIL) != 0;
@@ -110,16 +94,6 @@ static void parse_status_byte(uint8_t status_byte, pyro_status_t *status)
 }
 
 /**
- * @brief Update the latest status with thread safety
- */
-static void update_latest_status(const pyro_status_t *new_status)
-{
-    k_mutex_lock(&pyro_mutex, K_FOREVER);
-    latest_status = *new_status;
-    k_mutex_unlock(&pyro_mutex);
-}
-
-/**
  * @brief Request status from pyro board
  */
 static int request_pyro_status(void)
@@ -128,9 +102,10 @@ static int request_pyro_status(void)
     int ret = pyro_spi_transact(PYRO_CMD_STATUS_REQ, &status_byte);
 
     if (ret == 0) {
-        pyro_status_t new_status;
+        struct pyro_data new_status;
+        get_pyro_data(&new_status);
         parse_status_byte(status_byte, &new_status);
-        update_latest_status(&new_status);
+        set_pyro_data(&new_status);
 
         LOG_DBG("Pyro status: 0x%02x [D:%d M:%d DF:%d MF:%d DC:%d MC:%d DA:%d MA:%d]", status_byte,
                 new_status.drogue_fired, new_status.main_fired, new_status.drogue_fail,
@@ -147,7 +122,7 @@ static int request_pyro_status(void)
  * @param status Status byte received from pyro board
  * @return true if command was acknowledged
  */
-static bool is_fire_command_acked(uint8_t cmd, const pyro_status_t *status)
+static bool is_fire_command_acked(uint8_t cmd, const struct pyro_data *status)
 {
     if (cmd == PYRO_CMD_FIRE_DROGUE) {
         return status->drogue_fire_ack;
@@ -163,7 +138,7 @@ static bool is_fire_command_acked(uint8_t cmd, const pyro_status_t *status)
  * @param status Status received from pyro board
  * @return true if command completed, false if still in progress
  */
-static bool is_fire_command_complete(uint8_t cmd, const pyro_status_t *status)
+static bool is_fire_command_complete(uint8_t cmd, const struct pyro_data *status)
 {
     if (cmd == PYRO_CMD_FIRE_DROGUE) {
         return status->drogue_fired || status->drogue_fail;
@@ -179,7 +154,7 @@ static bool is_fire_command_complete(uint8_t cmd, const pyro_status_t *status)
  * @param status Final status received
  * @param retry_count Number of retries that were needed
  */
-static void log_fire_result(uint8_t cmd, const pyro_status_t *status, int retry_count)
+static void log_fire_result(uint8_t cmd, const struct pyro_data *status, int retry_count)
 {
     if (cmd == PYRO_CMD_FIRE_DROGUE) {
         if (status->drogue_fired) {
@@ -214,9 +189,10 @@ static void execute_pyro_command(uint8_t cmd)
         int ret = pyro_spi_transact(cmd, &status_byte);
 
         if (ret == 0) {
-            pyro_status_t new_status;
+            struct pyro_data new_status;
+            get_pyro_data(&new_status);
             parse_status_byte(status_byte, &new_status);
-            update_latest_status(&new_status);
+            set_pyro_data(&new_status);
 
             // Check if command was acknowledged
             if (is_fire_command_acked(cmd, &new_status)) {
@@ -302,38 +278,19 @@ void start_pyro_thread(void)
 int pyro_fire_drogue(void)
 {
     LOG_INF("Drogue fire command requested");
+    struct pyro_data pd;
+    get_pyro_data(&pd);
+    pd.drogue_fire_requested = true;
+    set_pyro_data(&pd);
     return send_pyro_command(PYRO_CMD_FIRE_DROGUE);
 }
 
 int pyro_fire_main(void)
 {
     LOG_INF("Main fire command requested");
+    struct pyro_data pd;
+    get_pyro_data(&pd);
+    pd.main_fire_requested = true;
+    set_pyro_data(&pd);
     return send_pyro_command(PYRO_CMD_FIRE_MAIN);
-}
-
-void pyro_get_status(pyro_status_t *status)
-{
-    if (status) {
-        k_mutex_lock(&pyro_mutex, K_FOREVER);
-        *status = latest_status;
-        k_mutex_unlock(&pyro_mutex);
-    }
-}
-
-bool pyro_is_drogue_continuity_ok(void)
-{
-    bool result;
-    k_mutex_lock(&pyro_mutex, K_FOREVER);
-    result = latest_status.drogue_cont_ok;
-    k_mutex_unlock(&pyro_mutex);
-    return result;
-}
-
-bool pyro_is_main_continuity_ok(void)
-{
-    bool result;
-    k_mutex_lock(&pyro_mutex, K_FOREVER);
-    result = latest_status.main_cont_ok;
-    k_mutex_unlock(&pyro_mutex);
-    return result;
 }
