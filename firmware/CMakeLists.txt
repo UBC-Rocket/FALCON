@@ -35,6 +35,9 @@ set(FALCON_PROTOS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../modules/falcon-protos)
 zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/HelloWorldPacket.proto)
 zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/TelemetryPacket.proto)
 
+# LwGPS NMEA parser library
+set(LWGPS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../modules/lwgps)
+
 target_sources(app PRIVATE
   src/main.c
   src/data.c
@@ -52,11 +55,14 @@ target_sources(app PRIVATE
   src/pyro/pyro_thread.c
   src/radio/radio_thread.c
   src/gps/gps_thread.c
+  ${LWGPS_DIR}/lwgps/src/lwgps/lwgps.c
 )
 
 target_include_directories(app PRIVATE
   src
   src/state_machine
+  src/gps
+  ${LWGPS_DIR}/lwgps/src/include
 )
 
 if(DEFINED DATA_FILE)
