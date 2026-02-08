@@ -3,12 +3,14 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/logging/log.h>
+#include <lwgps/lwgps.h>
+#include <string.h>
 
 LOG_MODULE_REGISTER(gps_thread, LOG_LEVEL_INF);
 
 #define GPS_THREAD_STACK_SIZE 2048
 #define GPS_THREAD_PRIORITY 6
-#define GPS_THREAD_PERIOD_MS 10000
+#define GPS_THREAD_PERIOD_MS 1000
 
 /* SPI protocol constants (ulysses-gnss-radio spec) */
 #define SPI_CMD_GPS_RX    0x05
@@ -25,6 +27,8 @@ static struct k_thread gps_thread;
 static const struct spi_dt_spec gps_spi =
 	SPI_DT_SPEC_GET(DT_ALIAS(radio0),
 			SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_WORD_SET(8));
+
+static lwgps_t gps;
 
 static int gps_spi_read(uint8_t *payload_out)
 {
@@ -71,15 +75,37 @@ static void gps_thread_fn(void *p1, void *p2, void *p3)
 	}
 	LOG_INF("GPS SPI device ready");
 
+	lwgps_init(&gps);
+
 	while (1) {
 		uint8_t payload[GPS_PAYLOAD_SIZE];
 
 		int ret = gps_spi_read(payload);
 		if (ret < 0) {
 			LOG_ERR("GPS SPI read failed: %d", ret);
-		} else {
-			LOG_HEXDUMP_INF(payload, GPS_PAYLOAD_SIZE, "GPS RX");
+			k_sleep(K_MSEC(GPS_THREAD_PERIOD_MS));
+			continue;
 		}
+
+		/* Null-terminate and find actual sentence length */
+		char nmea[GPS_PAYLOAD_SIZE + 1];
+		memcpy(nmea, payload, GPS_PAYLOAD_SIZE);
+		nmea[GPS_PAYLOAD_SIZE] = '\0';
+		size_t len = strlen(nmea);
+
+		if (len == 0 || nmea[0] != '$') {
+			k_sleep(K_MSEC(GPS_THREAD_PERIOD_MS));
+			continue;
+		}
+
+		lwgps_process(&gps, nmea, len);
+
+		LOG_INF("NMEA: %s", nmea);
+		LOG_INF("GPS: lat=%.6f, lon=%.6f, alt=%.1f m, "
+			"sats=%u, fix=%u, speed=%.1f kn",
+			(double)gps.latitude, (double)gps.longitude,
+			(double)gps.altitude, gps.sats_in_use, gps.fix,
+			(double)gps.speed);
 
 		k_sleep(K_MSEC(GPS_THREAD_PERIOD_MS));
 	}
