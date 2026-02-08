@@ -50,8 +50,7 @@ static void sim_baro_register_cmdline_opts(void)
             .call_when_found = NULL,
             .descript = "Path to OpenRocket CSV data file for baro simulation",
         },
-        ARG_TABLE_ENDMARKER
-    };
+        ARG_TABLE_ENDMARKER};
 
     native_add_command_line_opts(sim_baro_options);
 }
