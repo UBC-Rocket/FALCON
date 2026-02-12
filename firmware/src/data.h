@@ -35,7 +35,8 @@ struct baro_data {
     struct baro_sensor_data baro0; // Barometer 0
     struct baro_sensor_data baro1; // Barometer 1
 
-    float altitude;     // Kalman-filtered altitude estimate in meters
+    float altitude;     // Kalman-filtered altitude estimate in meters (absolute)
+    float altitude_agl; // Kalman-filtered altitude AGL (relative to ground) in meters
     float alt_variance; // Kalman filter variance (P)
     float velocity;     // Vertical velocity estimate (m/s)
     float vel_variance; // Velocity variance (P11)
@@ -46,6 +47,7 @@ struct baro_data {
 struct state_data {
     flight_state_id_t state;
     float ground_altitude;
+    bool ground_calibrated;
     int64_t timestamp;
 };
 

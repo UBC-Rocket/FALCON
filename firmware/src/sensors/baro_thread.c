@@ -399,6 +399,10 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
         log_baro("BARO0", &measurement_0, &health_0);
         log_baro("BARO1", &measurement_1, &health_1);
 
+        // Read ground altitude from state machine for AGL computation
+        struct state_data st;
+        get_state_data(&st);
+
         struct baro_data data = {.baro0 = {.pressure = measurement_0.pressure_pa,
                                            .altitude = measurement_0.altitude,
                                            .temperature = measurement_0.temperature_c,
@@ -411,9 +415,10 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
                                            .nis = measurement_1.nis,
                                            .faults = health_1.fault_count,
                                            .healthy = health_1.healthy},
-                                 .altitude = kf.h,
+                                 .altitude = st.ground_calibrated ? kf.h : 0.0f,
+                                 .altitude_agl = st.ground_calibrated ? kf.h - st.ground_altitude : 0.0f,
                                  .alt_variance = kf.P00,
-                                 .velocity = kf.v,
+                                 .velocity = st.ground_calibrated ? kf.v : 0.0f,
                                  .vel_variance = kf.P11,
                                  .timestamp = now_ms};
 
