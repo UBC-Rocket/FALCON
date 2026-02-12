@@ -33,6 +33,7 @@ include(nanopb)
 # Generate protobuf sources from falcon-protos
 set(FALCON_PROTOS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../modules/falcon-protos)
 zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/HelloWorldPacket.proto)
+zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/TelemetryPacket.proto)
 
 target_sources(app PRIVATE
   src/main.c

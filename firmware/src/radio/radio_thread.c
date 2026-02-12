@@ -7,7 +7,8 @@
 #include <zephyr/data/cobs.h>
 #include <zephyr/net_buf.h>
 #include <pb_encode.h>
-#include <HelloWorldPacket.pb.h>
+#include <TelemetryPacket.pb.h>
+#include "data.h"
 
 LOG_MODULE_REGISTER(radio_thread, LOG_LEVEL_INF);
 
@@ -74,18 +75,42 @@ static void radio_thread_fn(void *p1, void *p2, void *p3)
 	LOG_INF("Radio SPI device ready");
 
 	while (1) {
-		HelloWorldPacket message = HelloWorldPacket_init_zero;
+		TelemetryPacket message = TelemetryPacket_init_zero;
 		uint8_t buffer[MAX_PAYLOAD_SIZE];
 
+		struct imu_data imu;
+		struct baro_data baro;
+		struct state_data state;
+
+		get_imu_data(&imu);
+		get_baro_data(&baro);
+		get_state_data(&state);
+
 		message.counter = counter;
-		strncpy(message.message, "hello world", sizeof(message.message) - 1);
+		message.timestamp_ms = (uint32_t)k_uptime_get();
+		message.state = (FlightState)state.state;
+
+		message.accel_x = imu.accel[0];
+		message.accel_y = imu.accel[1];
+		message.accel_z = imu.accel[2];
+		message.gyro_x = imu.gyro[0];
+		message.gyro_y = imu.gyro[1];
+		message.gyro_z = imu.gyro[2];
+
+		message.kf_altitude = baro.altitude;
+		message.kf_velocity = baro.velocity;
+
+		message.baro0_healthy = baro.baro0.healthy;
+		message.baro1_healthy = baro.baro1.healthy;
+
+		message.ground_altitude = state.ground_altitude;
 
 		pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-		bool status = pb_encode(&stream, HelloWorldPacket_fields, &message);
+		bool status = pb_encode(&stream, TelemetryPacket_fields, &message);
 		size_t message_length = stream.bytes_written;
 
 		if (!status) {
-			LOG_ERR("Failed to encode HelloWorldPacket: %s",
+			LOG_ERR("Failed to encode TelemetryPacket: %s",
 				PB_GET_ERROR(&stream));
 			counter++;
 			k_sleep(K_MSEC(RADIO_THREAD_PERIOD_MS));
@@ -124,8 +149,12 @@ static void radio_thread_fn(void *p1, void *p2, void *p3)
 			if (ret < 0) {
 				LOG_ERR("SPI write failed: %d", ret);
 			} else {
-				LOG_INF("Sent packet: counter=%u, pb=%zu, cobs=%u bytes",
-					counter, message_length, dst_buf->len);
+				LOG_INF("Sent telemetry: counter=%u, alt=%.1f, vel=%.1f, "
+					"state=%d, pb=%zu, cobs=%u bytes",
+					counter, (double)message.kf_altitude,
+					(double)message.kf_velocity,
+					(int)message.state, message_length,
+					dst_buf->len);
 			}
 		} else {
 			LOG_ERR("COBS encoding failed: %d", ret);
