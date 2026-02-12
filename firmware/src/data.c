@@ -8,11 +8,13 @@ LOG_MODULE_REGISTER(data, LOG_LEVEL_INF);
 struct imu_data g_imu_data;
 struct baro_data g_baro_data;
 struct state_data g_state_data;
+struct gps_data g_gps_data;
 
 // Mutexes for thread safety
 K_MUTEX_DEFINE(imu_mutex);
 K_MUTEX_DEFINE(baro_mutex);
 K_MUTEX_DEFINE(state_mutex);
+K_MUTEX_DEFINE(gps_mutex);
 
 // Setter functions
 void set_imu_data(const struct imu_data *src)
@@ -56,4 +58,18 @@ void get_state_data(struct state_data *dst)
     k_mutex_lock(&state_mutex, K_FOREVER);
     *dst = g_state_data;
     k_mutex_unlock(&state_mutex);
+}
+
+void set_gps_data(const struct gps_data *src)
+{
+    k_mutex_lock(&gps_mutex, K_FOREVER);
+    g_gps_data = *src;
+    k_mutex_unlock(&gps_mutex);
+}
+
+void get_gps_data(struct gps_data *dst)
+{
+    k_mutex_lock(&gps_mutex, K_FOREVER);
+    *dst = g_gps_data;
+    k_mutex_unlock(&gps_mutex);
 }

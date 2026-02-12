@@ -48,10 +48,21 @@ struct state_data {
     int64_t timestamp;
 };
 
+struct gps_data {
+    float latitude;   // Degrees
+    float longitude;  // Degrees
+    float altitude;   // Altitude in meters
+    float speed;      // Speed in knots
+    uint8_t sats;     // Satellites in use
+    uint8_t fix;      // Fix quality
+    int64_t timestamp;
+};
+
 // Global instances
 extern struct imu_data g_imu_data;
 extern struct baro_data g_baro_data;
 extern struct state_data g_state_data;
+extern struct gps_data g_gps_data;
 
 // Getters and setters
 void set_imu_data(const struct imu_data *src);
@@ -62,5 +73,8 @@ void get_baro_data(struct baro_data *dst);
 
 void set_state_data(const struct state_data *src);
 void get_state_data(struct state_data *dst);
+
+void set_gps_data(const struct gps_data *src);
+void get_gps_data(struct gps_data *dst);
 
 #endif

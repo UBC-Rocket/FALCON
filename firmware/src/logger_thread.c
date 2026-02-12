@@ -64,7 +64,9 @@ static int write_csv_header(void)
                          "Baro1_Pressure(Pa),Baro1_Temperature(C),Baro1_Altitude(m),Baro1_NIS,"
                          "Baro1_Faults,Baro1_Healthy,"
                          "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar,"
-                         "State,State_Ground_Altitude(m),State_Timestamp(ms)\n";
+                         "State,State_Ground_Altitude(m),State_Timestamp(ms),"
+                         "GPS_Timestamp(ms),GPS_Lat(deg),GPS_Lon(deg),"
+                         "GPS_Alt(m),GPS_Speed(kn),GPS_Sats,GPS_Fix\n";
     int ret;
 
     // Write the header row to the log file
@@ -140,12 +142,13 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-        "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld\n",
+        "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld,"
+        "%lld,%.6f,%.6f,%.1f,%.1f,%u,%u\n",
         frame->log_timestamp,
-        frame->imu.timestamp, // IMU timestamp
+        frame->imu.timestamp,
         (double)frame->imu.accel[0], (double)frame->imu.accel[1], (double)frame->imu.accel[2],
         (double)frame->imu.gyro[0], (double)frame->imu.gyro[1], (double)frame->imu.gyro[2],
-        frame->baro.timestamp, // Barometer timestamp
+        frame->baro.timestamp,
         (double)frame->baro.baro0.pressure, (double)frame->baro.baro0.temperature,
         (double)frame->baro.baro0.altitude, (double)frame->baro.baro0.nis,
         (unsigned int)frame->baro.baro0.faults, frame->baro.baro0.healthy ? 1 : 0,
@@ -154,7 +157,11 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         (unsigned int)frame->baro.baro1.faults, frame->baro.baro1.healthy ? 1 : 0,
         (double)frame->baro.altitude, (double)frame->baro.alt_variance,
         (double)frame->baro.velocity, (double)frame->baro.vel_variance, (int)frame->state.state,
-        (double)frame->state.ground_altitude, frame->state.timestamp);
+        (double)frame->state.ground_altitude, frame->state.timestamp,
+        frame->gps.timestamp,
+        (double)frame->gps.latitude, (double)frame->gps.longitude,
+        (double)frame->gps.altitude, (double)frame->gps.speed,
+        (unsigned int)frame->gps.sats, (unsigned int)frame->gps.fix);
 }
 
 static void write_log_frame_to_file(const struct log_frame *frame)
@@ -203,6 +210,7 @@ static void logger_thread_fn(void *p1, void *p2, void *p3)
         get_imu_data(&frame.imu);
         get_baro_data(&frame.baro);
         get_state_data(&frame.state);
+        get_gps_data(&frame.gps);
 
         // Write the data to the log file
         write_log_frame_to_file(&frame);
