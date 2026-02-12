@@ -87,6 +87,20 @@ static void gps_thread_fn(void *p1, void *p2, void *p3)
 			continue;
 		}
 
+		/* Check for empty payload (all zero bytes from SPI) */
+		bool payload_empty = true;
+		for (size_t i = 0; i < GPS_PAYLOAD_SIZE; i++) {
+			if (payload[i] != 0) {
+				payload_empty = false;
+				break;
+			}
+		}
+		if (payload_empty) {
+			LOG_WRN("GPS SPI payload is empty (all zeros)");
+			k_sleep(K_MSEC(GPS_THREAD_PERIOD_MS));
+			continue;
+		}
+
 		/* Null-terminate and find actual sentence length */
 		char nmea[GPS_PAYLOAD_SIZE + 1];
 		memcpy(nmea, payload, GPS_PAYLOAD_SIZE);
