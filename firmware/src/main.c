@@ -24,7 +24,7 @@ int main(void)
     start_baro_thread();
     start_pyro_thread();
     start_state_machine_thread();
-    // start_radio_thread();
+    start_radio_thread();
     start_gps_thread();
 
     return 0;
