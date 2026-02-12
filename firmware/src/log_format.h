@@ -11,6 +11,7 @@ struct log_frame {
     struct baro_data baro;
     struct state_data state;
     struct pyro_data pyro;
+    struct gps_data gps;
 };
 
 #endif

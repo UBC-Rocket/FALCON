@@ -9,12 +9,14 @@ struct imu_data g_imu_data;
 struct baro_data g_baro_data;
 struct state_data g_state_data;
 struct pyro_data g_pyro_data;
+struct gps_data g_gps_data;
 
 // Mutexes for thread safety
 K_MUTEX_DEFINE(imu_mutex);
 K_MUTEX_DEFINE(baro_mutex);
 K_MUTEX_DEFINE(state_mutex);
 K_MUTEX_DEFINE(pyro_data_mutex);
+K_MUTEX_DEFINE(gps_mutex);
 
 // Setter functions
 void set_imu_data(const struct imu_data *src)
@@ -105,4 +107,18 @@ void get_pyro_data(struct pyro_data *dst)
     k_mutex_lock(&pyro_data_mutex, K_FOREVER);
     *dst = g_pyro_data;
     k_mutex_unlock(&pyro_data_mutex);
+}
+
+void set_gps_data(const struct gps_data *src)
+{
+    k_mutex_lock(&gps_mutex, K_FOREVER);
+    g_gps_data = *src;
+    k_mutex_unlock(&gps_mutex);
+}
+
+void get_gps_data(struct gps_data *dst)
+{
+    k_mutex_lock(&gps_mutex, K_FOREVER);
+    *dst = g_gps_data;
+    k_mutex_unlock(&gps_mutex);
 }

@@ -5,6 +5,7 @@
 #include <zephyr/logging/log.h>
 #include <lwgps/lwgps.h>
 #include <string.h>
+#include "data.h"
 
 LOG_MODULE_REGISTER(gps_thread, LOG_LEVEL_INF);
 
@@ -113,6 +114,17 @@ static void gps_thread_fn(void *p1, void *p2, void *p3)
 		}
 
 		lwgps_process(&gps, nmea, len);
+
+		struct gps_data gps_out = {
+			.latitude = gps.latitude,
+			.longitude = gps.longitude,
+			.altitude = gps.altitude,
+			.speed = gps.speed,
+			.sats = gps.sats_in_use,
+			.fix = gps.fix,
+			.timestamp = k_uptime_get(),
+		};
+		set_gps_data(&gps_out);
 
 		LOG_INF("NMEA: %s", nmea);
 		LOG_INF("GPS: lat=%.6f, lon=%.6f, alt=%.1f m, "
