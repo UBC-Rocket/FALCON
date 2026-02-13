@@ -63,7 +63,7 @@ static int write_csv_header(void)
                          "Baro0_Faults,Baro0_Healthy,"
                          "Baro1_Pressure(Pa),Baro1_Temperature(C),Baro1_Altitude(m),Baro1_NIS,"
                          "Baro1_Faults,Baro1_Healthy,"
-                         "KF_Altitude(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar,"
+                         "KF_Altitude(m),KF_Altitude_AGL(m),KF_AltVar,KF_Velocity(m/s),KF_VelVar,"
                          "State,State_Ground_Altitude(m),State_Timestamp(ms),"
                          "Pyro_Status,Pyro_Timestamp(ms),"
                          "Drogue_Fired,Main_Fired,Drogue_Fail,Main_Fail,"
@@ -144,7 +144,7 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
         "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-        "%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld,"
+        "%.3f,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld,"
         "%u,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
         frame->log_timestamp,
         frame->imu.timestamp, // IMU timestamp
@@ -157,7 +157,8 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         (double)frame->baro.baro1.pressure, (double)frame->baro.baro1.temperature,
         (double)frame->baro.baro1.altitude, (double)frame->baro.baro1.nis,
         (unsigned int)frame->baro.baro1.faults, frame->baro.baro1.healthy ? 1 : 0,
-        (double)frame->baro.altitude, (double)frame->baro.alt_variance,
+        (double)frame->baro.altitude, (double)frame->baro.altitude_agl,
+        (double)frame->baro.alt_variance,
         (double)frame->baro.velocity, (double)frame->baro.vel_variance, (int)frame->state.state,
         (double)frame->state.ground_altitude, frame->state.timestamp,
         (unsigned int)frame->pyro.status_byte, frame->pyro.timestamp,

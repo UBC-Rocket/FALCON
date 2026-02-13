@@ -71,6 +71,7 @@ static void state_machine_thread_fn(void *p1, void *p2, void *p3)
         struct state_data data = {
             .state = current,
             .ground_altitude = state_machine.ground_altitude_m,
+            .ground_calibrated = state_machine.ground_ready,
             .timestamp = now_ms,
         };
         set_state_data(&data);
@@ -106,6 +107,7 @@ void state_machine_test_step(float altitude_m, float velocity_mps, int64_t times
     struct state_data data = {
         .state = state_machine.current_id,
         .ground_altitude = state_machine.ground_altitude_m,
+        .ground_calibrated = state_machine.ground_ready,
         .timestamp = timestamp_ms,
     };
     set_state_data(&data);
