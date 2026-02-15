@@ -84,10 +84,11 @@ ZTEST(integration, test_full_flight_sequence)
     LOG_INF("========================================");
 
     /* Start threads */
-    LOG_INF("\nStarting state machine and pyro threads...");
+    LOG_INF("\nStarting threads...");
     start_state_machine_thread();
     start_pyro_thread();
-    
+    start_gps_thread();
+    start_radio_thread();
     /* Wait for initialization */
     k_sleep(K_SECONDS(2));
 
