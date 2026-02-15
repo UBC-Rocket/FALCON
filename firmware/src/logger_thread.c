@@ -95,7 +95,6 @@ static int write_csv_header(void)
                          "Drogue_Fired,Main_Fired,Drogue_Fail,Main_Fail,"
                          "Drogue_Cont_OK,Main_Cont_OK,Drogue_Fire_ACK,Main_Fire_ACK,"
                          "Drogue_Fire_Requested,Main_Fire_Requested\n";
-    int ret;
 
 #ifdef CONFIG_BOARD_NATIVE_SIM
     size_t written = fwrite(header, 1, strlen(header), log_file_ptr);
