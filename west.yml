@@ -4,6 +4,8 @@ manifest:
       url-base: https://github.com/zephyrproject-rtos
     - name: ubc-rocket
       url-base: https://github.com/UBC-Rocket
+    - name: lwgps-remote
+      url-base: https://github.com/MaJerle
 
   projects:
     - name: zephyr
@@ -14,6 +16,10 @@ manifest:
       remote: ubc-rocket
       revision: main
       path: modules/falcon-protos
+    - name: lwgps
+      remote: lwgps-remote
+      revision: main
+      path: modules/lwgps
 
   self:
     path: app

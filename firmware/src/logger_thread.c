@@ -94,9 +94,10 @@ static int write_csv_header(void)
                          "Pyro_Status,Pyro_Timestamp(ms),"
                          "Drogue_Fired,Main_Fired,Drogue_Fail,Main_Fail,"
                          "Drogue_Cont_OK,Main_Cont_OK,Drogue_Fire_ACK,Main_Fire_ACK,"
-                         "Drogue_Fire_Requested,Main_Fire_Requested\n";
-
-#ifdef CONFIG_BOARD_NATIVE_SIM
+                         "Drogue_Fire_Requested,Main_Fire_Requested,"
+                         "GPS_Timestamp(ms),GPS_Lat(deg),GPS_Lon(deg),"
+                         "GPS_Alt(m),GPS_Speed(kn),GPS_Sats,GPS_Fix\n";
+    #ifdef CONFIG_BOARD_NATIVE_SIM
     size_t written = fwrite(header, 1, strlen(header), log_file_ptr);
     if (written != strlen(header)) {
         LOG_ERR("Failed to write header");
@@ -193,11 +194,12 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
 {
     return snprintf(
         buffer, buffer_size,
-        "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld,"
-        "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-        "%.3f,%.3f,%.3f,%.3f,%u,%d,"
-        "%.3f,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld,"
-        "%u,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+        "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld," // Log_Timestamp, IMU_Timestamp, Accel_X/Y/Z, Gyro_X/Y/Z, Baro_Timestamp
+        "%.3f,%.3f,%.3f,%.3f,%u,%d," // Baro0_Pressure, Baro0_Temperature, Baro0_Altitude, Baro0_NIS, Baro0_Faults, Baro0_Healthy
+        "%.3f,%.3f,%.3f,%.3f,%u,%d," // Baro1_Pressure, Baro1_Temperature, Baro1_Altitude, Baro1_NIS, Baro1_Faults, Baro1_Healthy
+        "%.3f,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld," // KF_Altitude, KF_Altitude_AGL, KF_AltVar, KF_Velocity, KF_VelVar, State, State_Ground_Altitude, State_Timestamp
+        "%u,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," // Pyro_Status, Pyro_Timestamp, Drogue_Fired, Main_Fired, Drogue_Fail, Main_Fail, Drogue_Cont_OK, Main_Cont_OK, Drogue_Fire_ACK, Main_Fire_ACK, Drogue_Fire_Requested, Main_Fire_Requested
+        "%lld,%.6f,%.6f,%.1f,%.1f,%u,%u\n", // GPS_Timestamp, GPS_Lat, GPS_Lon, GPS_Alt, GPS_Speed, GPS_Sats, GPS_Fix
         frame->log_timestamp,
         frame->imu.timestamp,
         (double)frame->imu.accel[0], (double)frame->imu.accel[1], (double)frame->imu.accel[2],
@@ -218,7 +220,12 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         frame->pyro.drogue_fail ? 1 : 0, frame->pyro.main_fail ? 1 : 0,
         frame->pyro.drogue_cont_ok ? 1 : 0, frame->pyro.main_cont_ok ? 1 : 0,
         frame->pyro.drogue_fire_ack ? 1 : 0, frame->pyro.main_fire_ack ? 1 : 0,
-        frame->pyro.drogue_fire_requested ? 1 : 0, frame->pyro.main_fire_requested ? 1 : 0);
+        frame->pyro.drogue_fire_requested ? 1 : 0, frame->pyro.main_fire_requested ? 1 : 0,
+        frame->gps.timestamp,
+        (double)frame->gps.latitude, (double)frame->gps.longitude,
+        (double)frame->gps.altitude, (double)frame->gps.speed,
+        (unsigned int)frame->gps.sats, (unsigned int)frame->gps.fix
+    );
 }
 
 static void write_log_frame_to_file(const struct log_frame *frame)
@@ -267,6 +274,7 @@ static void logger_thread_fn(void *p1, void *p2, void *p3)
         get_baro_data(&frame.baro);
         get_state_data(&frame.state);
         get_pyro_data(&frame.pyro);
+        get_gps_data(&frame.gps);
 
         write_log_frame_to_file(&frame);
 

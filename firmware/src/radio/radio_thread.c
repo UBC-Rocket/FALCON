@@ -81,10 +81,12 @@ static void radio_thread_fn(void *p1, void *p2, void *p3)
 		struct imu_data imu;
 		struct baro_data baro;
 		struct state_data state;
+		struct gps_data gps;
 
 		get_imu_data(&imu);
 		get_baro_data(&baro);
 		get_state_data(&state);
+		get_gps_data(&gps);
 
 		message.counter = counter;
 		message.timestamp_ms = (uint32_t)k_uptime_get();
@@ -104,6 +106,13 @@ static void radio_thread_fn(void *p1, void *p2, void *p3)
 		message.baro1_healthy = baro.baro1.healthy;
 
 		message.ground_altitude = state.ground_altitude;
+
+		message.gps_latitude = gps.latitude;
+		message.gps_longitude = gps.longitude;
+		message.gps_altitude = gps.altitude;
+		message.gps_speed = gps.speed;
+		message.gps_sats = gps.sats;
+		message.gps_fix = gps.fix;
 
 		pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
 		bool status = pb_encode(&stream, TelemetryPacket_fields, &message);

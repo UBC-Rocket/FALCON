@@ -66,11 +66,22 @@ struct pyro_data {
     bool main_fire_requested;
 };
 
+struct gps_data {
+    float latitude;   // Degrees
+    float longitude;  // Degrees
+    float altitude;   // Altitude in meters
+    float speed;      // Speed in knots
+    uint8_t sats;     // Satellites in use
+    uint8_t fix;      // Fix quality
+    int64_t timestamp;
+};
+
 // Global instances
 extern struct imu_data g_imu_data;
 extern struct baro_data g_baro_data;
 extern struct state_data g_state_data;
 extern struct pyro_data g_pyro_data;
+extern struct gps_data g_gps_data;
 
 // Getters and setters
 void set_imu_data(const struct imu_data *src);
@@ -84,5 +95,8 @@ void get_state_data(struct state_data *dst);
 
 void set_pyro_data(const struct pyro_data *src);
 void get_pyro_data(struct pyro_data *dst);
+
+void set_gps_data(const struct gps_data *src);
+void get_gps_data(struct gps_data *dst);
 
 #endif
