@@ -415,10 +415,10 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
                                            .nis = measurement_1.nis,
                                            .faults = health_1.fault_count,
                                            .healthy = health_1.healthy},
-                                 .altitude = st.ground_calibrated ? kf.h : 0.0f,
+                                 .altitude = kf.h,
                                  .altitude_agl = st.ground_calibrated ? kf.h - st.ground_altitude : 0.0f,
                                  .alt_variance = kf.P00,
-                                 .velocity = st.ground_calibrated ? kf.v : 0.0f,
+                                 .velocity = kf.v,
                                  .vel_variance = kf.P11,
                                  .timestamp = now_ms};
 

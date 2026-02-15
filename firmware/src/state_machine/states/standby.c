@@ -10,6 +10,9 @@ LOG_MODULE_REGISTER(state_standby, LOG_LEVEL_DBG);
 static flight_state_id_t update_standby(struct flight_sm *sm, const state_sample_t *sample)
 {
     if (!sm->ground_ready) {
+       if ((sample->timestamp_ms - sm->ground_warmup_start_ms) < GROUND_WARMUP_MS) {
+            return FLIGHT_STATE_STANDBY;
+        }
         sm->ground_sum_m += sample->altitude_m;
         sm->ground_samples++;
         LOG_DBG("Ground calibration: %d/%d samples, current_alt=%.2f m, avg=%.2f m",

@@ -2,6 +2,7 @@
 #define STATE_MACHINE_CONFIG_H
 
 // Standby baseline
+#define GROUND_WARMUP_MS 2000     // Ignore baro samples for first 2s to let KF converge
 #define GROUND_AVERAGE_SAMPLES 50 // At 50Hz = 1 second of data
 
 // Ascent detection
