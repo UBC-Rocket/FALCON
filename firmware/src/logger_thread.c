@@ -220,11 +220,11 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         frame->pyro.drogue_fail ? 1 : 0, frame->pyro.main_fail ? 1 : 0,
         frame->pyro.drogue_cont_ok ? 1 : 0, frame->pyro.main_cont_ok ? 1 : 0,
         frame->pyro.drogue_fire_ack ? 1 : 0, frame->pyro.main_fire_ack ? 1 : 0,
-        frame->pyro.drogue_fire_requested ? 1 : 0, frame->pyro.main_fire_requested ? 1 : 0),
+        frame->pyro.drogue_fire_requested ? 1 : 0, frame->pyro.main_fire_requested ? 1 : 0,
         frame->gps.timestamp,
         (double)frame->gps.latitude, (double)frame->gps.longitude,
         (double)frame->gps.altitude, (double)frame->gps.speed,
-        (unsigned int)frame->gps.sats, (unsigned int)frame->gps.fix);;
+        (unsigned int)frame->gps.sats, (unsigned int)frame->gps.fix
     );
 }
 
