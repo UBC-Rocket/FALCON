@@ -6,6 +6,8 @@
 #include "state_machine/state_machine_internal.h"
 #include "state_machine/state_machine_config.h"
 #include "pyro/pyro_thread.h"
+#include "gps/gps_thread.h"
+#include "radio/radio_thread.h"
 #include "data.h"
 
 LOG_MODULE_REGISTER(integration_test, LOG_LEVEL_INF);

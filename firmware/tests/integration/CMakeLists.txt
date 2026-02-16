@@ -18,6 +18,8 @@ target_sources(app PRIVATE
     ../../src/state_machine/states/main_descent.c
     ../../src/state_machine/states/landed.c
     ../../src/pyro/pyro_thread.c
+    ../../src/gps/gps_thread.c
+    ../../src/radio/radio_thread.c
 )
 
 target_include_directories(app PRIVATE
