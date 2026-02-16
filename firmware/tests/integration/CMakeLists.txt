@@ -20,6 +20,8 @@ target_sources(app PRIVATE
     ../../src/pyro/pyro_thread.c
     ../../src/gps/gps_thread.c
     ../../src/radio/radio_thread.c
+    ${LWGPS_DIR}/lwgps/src/lwgps/lwgps.c
+
 )
 
 target_include_directories(app PRIVATE
