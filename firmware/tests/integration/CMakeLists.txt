@@ -5,6 +5,18 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(cloudburst_integration_test)
 
+# Include nanopb for protobuf support
+list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
+include(nanopb)
+
+# Generate protobuf sources from falcon-protos
+set(FALCON_PROTOS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../modules/falcon-protos)
+zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/HelloWorldPacket.proto)
+zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/TelemetryPacket.proto)
+
+# LwGPS NMEA parser library
+set(LWGPS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../modules/lwgps)
+
 # Add the main application sources needed for integration testing
 target_sources(app PRIVATE 
     src/main.c
