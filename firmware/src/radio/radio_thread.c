@@ -99,11 +99,25 @@ static void radio_thread_fn(void *p1, void *p2, void *p3)
 		message.gyro_y = imu.gyro[1];
 		message.gyro_z = imu.gyro[2];
 
+
 		message.kf_altitude = baro.altitude;
 		message.kf_velocity = baro.velocity;
+		message.kf_alt_variance = baro.alt_variance;
+		message.kf_vel_variance = baro.vel_variance;
 
 		message.baro0_healthy = baro.baro0.healthy;
+		message.baro0_pressure = baro.baro0.pressure;
+		message.baro0_temperature = baro.baro0.temperature;
+		message.baro0_altitude = baro.baro0.altitude;
+		message.baro0_nis = baro.baro0.nis;
+		message.baro0_faults = baro.baro0.faults;
+
 		message.baro1_healthy = baro.baro1.healthy;
+		message.baro1_pressure = baro.baro1.pressure;
+		message.baro1_temperature = baro.baro1.temperature;
+		message.baro1_altitude = baro.baro1.altitude;
+		message.baro1_nis = baro.baro1.nis;
+		message.baro1_faults = baro.baro1.faults;
 
 		message.ground_altitude = state.ground_altitude;
 
