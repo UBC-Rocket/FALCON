@@ -27,6 +27,29 @@ FALCON uses Zephyr's workspace management and meta-tool, [west](https://docs.zep
 
 For a nice UI based developer experience, use VS Code with the 'Zephyr IDE Extension Pack' extension
 
+## Flashing the Firmware
+1. To flash the main rocket firmware, ensure the ubcrocket_polarity flight controller board is plugged in to the computer through an ST-Link, and is powered
+
+**UI Method**
+
+2. Open the FALCON directory in vscode
+3. Open the Zephyr IDE extension (the one with the bird)
+4. Ensure the "firmware" project is selected
+5. Click "Build Pristine" near the bottom of extension
+6. Click "Flash"
+
+**Command Line Method**
+
+2. cd into FALCON dir
+3. run `source .venv/bin/activate`
+4. cd into "app" dir: `cd app`
+5. run `west build -b ubcrocket_polarity firmware -p`
+6. run `west flash`
+
+**Verification**
+
+Both of these methods can be verified by opening a serial monitor to the port with a baud rate of 115200. When flashing, you should see some logs print that start up each thread, verify that the SD card was properly mounted, and verify that the sensors initiated successfully.
+
 ## Zephyr VSCode Setup
 TODO
 
