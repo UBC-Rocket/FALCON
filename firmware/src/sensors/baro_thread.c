@@ -416,7 +416,8 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
                                            .faults = health_1.fault_count,
                                            .healthy = health_1.healthy},
                                  .altitude = kf.h,
-                                 .altitude_agl = st.ground_calibrated ? kf.h - st.ground_altitude : 0.0f,
+                                 .altitude_agl =
+                                     st.ground_calibrated ? kf.h - st.ground_altitude : 0.0f,
                                  .alt_variance = kf.P00,
                                  .velocity = kf.v,
                                  .vel_variance = kf.P11,

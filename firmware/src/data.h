@@ -67,12 +67,12 @@ struct pyro_data {
 };
 
 struct gps_data {
-    float latitude;   // Degrees
-    float longitude;  // Degrees
-    float altitude;   // Altitude in meters
-    float speed;      // Speed in knots
-    uint8_t sats;     // Satellites in use
-    uint8_t fix;      // Fix quality
+    float latitude;  // Degrees
+    float longitude; // Degrees
+    float altitude;  // Altitude in meters
+    float speed;     // Speed in knots
+    uint8_t sats;    // Satellites in use
+    uint8_t fix;     // Fix quality
     int64_t timestamp;
 };
 

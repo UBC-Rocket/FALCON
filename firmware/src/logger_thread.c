@@ -97,7 +97,7 @@ static int write_csv_header(void)
                          "Drogue_Fire_Requested,Main_Fire_Requested,"
                          "GPS_Timestamp(ms),GPS_Lat(deg),GPS_Lon(deg),"
                          "GPS_Alt(m),GPS_Speed(kn),GPS_Sats,GPS_Fix\n";
-    #ifdef CONFIG_BOARD_NATIVE_SIM
+#ifdef CONFIG_BOARD_NATIVE_SIM
     size_t written = fwrite(header, 1, strlen(header), log_file_ptr);
     if (written != strlen(header)) {
         LOG_ERR("Failed to write header");
@@ -194,17 +194,25 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
 {
     return snprintf(
         buffer, buffer_size,
-        "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld," // Log_Timestamp, IMU_Timestamp, Accel_X/Y/Z, Gyro_X/Y/Z, Baro_Timestamp
-        "%.3f,%.3f,%.3f,%.3f,%u,%d," // Baro0_Pressure, Baro0_Temperature, Baro0_Altitude, Baro0_NIS, Baro0_Faults, Baro0_Healthy
-        "%.3f,%.3f,%.3f,%.3f,%u,%d," // Baro1_Pressure, Baro1_Temperature, Baro1_Altitude, Baro1_NIS, Baro1_Faults, Baro1_Healthy
-        "%.3f,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld," // KF_Altitude, KF_Altitude_AGL, KF_AltVar, KF_Velocity, KF_VelVar, State, State_Ground_Altitude, State_Timestamp
-        "%u,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," // Pyro_Status, Pyro_Timestamp, Drogue_Fired, Main_Fired, Drogue_Fail, Main_Fail, Drogue_Cont_OK, Main_Cont_OK, Drogue_Fire_ACK, Main_Fire_ACK, Drogue_Fire_Requested, Main_Fire_Requested
-        "%lld,%.6f,%.6f,%.1f,%.1f,%u,%u\n", // GPS_Timestamp, GPS_Lat, GPS_Lon, GPS_Alt, GPS_Speed, GPS_Sats, GPS_Fix
-        frame->log_timestamp,
-        frame->imu.timestamp,
-        (double)frame->imu.accel[0], (double)frame->imu.accel[1], (double)frame->imu.accel[2],
-        (double)frame->imu.gyro[0], (double)frame->imu.gyro[1], (double)frame->imu.gyro[2],
-        frame->baro.timestamp,
+        "%lld,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%lld," // Log_Timestamp, IMU_Timestamp,
+                                                        // Accel_X/Y/Z, Gyro_X/Y/Z, Baro_Timestamp
+        "%.3f,%.3f,%.3f,%.3f,%u,%d," // Baro0_Pressure, Baro0_Temperature, Baro0_Altitude,
+                                     // Baro0_NIS, Baro0_Faults, Baro0_Healthy
+        "%.3f,%.3f,%.3f,%.3f,%u,%d," // Baro1_Pressure, Baro1_Temperature, Baro1_Altitude,
+                                     // Baro1_NIS, Baro1_Faults, Baro1_Healthy
+        "%.3f,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%lld," // KF_Altitude, KF_Altitude_AGL, KF_AltVar,
+                                                 // KF_Velocity, KF_VelVar, State,
+                                                 // State_Ground_Altitude, State_Timestamp
+        "%u,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d," // Pyro_Status, Pyro_Timestamp, Drogue_Fired,
+                                                 // Main_Fired, Drogue_Fail, Main_Fail,
+                                                 // Drogue_Cont_OK, Main_Cont_OK, Drogue_Fire_ACK,
+                                                 // Main_Fire_ACK, Drogue_Fire_Requested,
+                                                 // Main_Fire_Requested
+        "%lld,%.6f,%.6f,%.1f,%.1f,%u,%u\n", // GPS_Timestamp, GPS_Lat, GPS_Lon, GPS_Alt, GPS_Speed,
+                                            // GPS_Sats, GPS_Fix
+        frame->log_timestamp, frame->imu.timestamp, (double)frame->imu.accel[0],
+        (double)frame->imu.accel[1], (double)frame->imu.accel[2], (double)frame->imu.gyro[0],
+        (double)frame->imu.gyro[1], (double)frame->imu.gyro[2], frame->baro.timestamp,
         (double)frame->baro.baro0.pressure, (double)frame->baro.baro0.temperature,
         (double)frame->baro.baro0.altitude, (double)frame->baro.baro0.nis,
         (unsigned int)frame->baro.baro0.faults, frame->baro.baro0.healthy ? 1 : 0,
@@ -212,8 +220,8 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         (double)frame->baro.baro1.altitude, (double)frame->baro.baro1.nis,
         (unsigned int)frame->baro.baro1.faults, frame->baro.baro1.healthy ? 1 : 0,
         (double)frame->baro.altitude, (double)frame->baro.altitude_agl,
-        (double)frame->baro.alt_variance,
-        (double)frame->baro.velocity, (double)frame->baro.vel_variance, (int)frame->state.state,
+        (double)frame->baro.alt_variance, (double)frame->baro.velocity,
+        (double)frame->baro.vel_variance, (int)frame->state.state,
         (double)frame->state.ground_altitude, frame->state.timestamp,
         (unsigned int)frame->pyro.status_byte, frame->pyro.timestamp,
         frame->pyro.drogue_fired ? 1 : 0, frame->pyro.main_fired ? 1 : 0,
@@ -221,11 +229,9 @@ static int format_log_entry(const struct log_frame *frame, char *buffer, size_t 
         frame->pyro.drogue_cont_ok ? 1 : 0, frame->pyro.main_cont_ok ? 1 : 0,
         frame->pyro.drogue_fire_ack ? 1 : 0, frame->pyro.main_fire_ack ? 1 : 0,
         frame->pyro.drogue_fire_requested ? 1 : 0, frame->pyro.main_fire_requested ? 1 : 0,
-        frame->gps.timestamp,
-        (double)frame->gps.latitude, (double)frame->gps.longitude,
-        (double)frame->gps.altitude, (double)frame->gps.speed,
-        (unsigned int)frame->gps.sats, (unsigned int)frame->gps.fix
-    );
+        frame->gps.timestamp, (double)frame->gps.latitude, (double)frame->gps.longitude,
+        (double)frame->gps.altitude, (double)frame->gps.speed, (unsigned int)frame->gps.sats,
+        (unsigned int)frame->gps.fix);
 }
 
 static void write_log_frame_to_file(const struct log_frame *frame)
