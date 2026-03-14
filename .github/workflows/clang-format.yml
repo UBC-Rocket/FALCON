@@ -6,6 +6,8 @@ jobs:
   clang-format:
     runs-on: ubuntu-latest
 
+    permissions: write-all
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -14,6 +16,19 @@ jobs:
         run: |
           which clang-format
           clang-format --version
+
+      - name: Auto-format
+        run: find . -name '*.c' -o -name '*.h' | xargs clang-format -i -style=file
+
+      - name: Commit changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add .
+            git commit -m "Auto format with clang-format"
+            git push
+          fi
 
       - name: Run clang-format check
         run: |
