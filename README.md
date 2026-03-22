@@ -67,6 +67,10 @@ TODO
 5. Click Export and save your csv file
 
 #### Running the integration test
+> [!NOTE]
+> If using MacOS you will need to perform the following from within this docker container: https://hub.docker.com/r/zephyrprojectrtos/zephyr-build
+> 
+>Mount it from within your FALCON dir, e.g. `docker run -ti -v $HOME/FALCON:/workdir docker.io/zephyrprojectrtos/zephyr-build:main`
 1. Ensure you're in the virtual environment using inside `FALCON/`:
    - `source .venv/bin/activate` (MacOS/Linux) or `.venv\Scripts\activate.bat` (Windows)
 2. Build FALCON using Zephyr's built in native_sim board:
