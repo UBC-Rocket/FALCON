@@ -22,7 +22,7 @@
 #define DROGUE_DEPLOY_DELAY_MS 1000
 
 // Main deployment
-#define MAIN_DEPLOY_ALTITUDE_M 488.0f
+#define MAIN_DEPLOY_ALTITUDE_M 457.0f //1500 ft
 #define MAIN_DEPLOY_CHECKS 5
 
 // Landing detection
