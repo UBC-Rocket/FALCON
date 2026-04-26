@@ -20,11 +20,6 @@ LOG_MODULE_REGISTER(baro_thread, LOG_LEVEL_INF);
 // Debug logging
 #define BARO_LOG_ENABLE 0
 
-/* NIS gating */
-#define BARO_NIS_THRESHOLD 6.0f    // soft threshold for health counter
-#define BARO_NIS_HARD_REJECT 25.0f // immediate reject even if "healthy"
-#define BARO_FAULT_LIMIT 5
-
 /* Altitude conversion */
 #define P0_PA 101325.0f
 #define GAS_CONSTANT_AIR 287.05f
@@ -53,7 +48,6 @@ typedef struct {
 } kalman_hv_t;
 
 typedef struct {
-    uint8_t fault_count;
     bool healthy;
 } baro_health_t;
 
@@ -177,23 +171,10 @@ static float kf_compute_nis(const kalman_hv_t *kf_pred, float z_alt, float R, fl
     }
 
     if (S < 1e-9f) {
-        return BARO_NIS_HARD_REJECT;
+        return INFINITY;
     }
 
     return (y * y) / S;
-}
-
-static void update_baro_health(baro_health_t *health, float nis)
-{
-    if (nis > BARO_NIS_THRESHOLD) {
-        if (health->fault_count < 255) {
-            health->fault_count++;
-        }
-    } else if (health->fault_count > 0) {
-        health->fault_count--;
-    }
-
-    health->healthy = (health->fault_count < BARO_FAULT_LIMIT);
 }
 
 static bool read_baro(const struct device *dev, float *pressure_pa, float *altitude,
@@ -228,8 +209,8 @@ static bool read_baro(const struct device *dev, float *pressure_pa, float *altit
     return true;
 }
 
-static void assess_baro_measurement(const kalman_hv_t *kf_pred, baro_health_t *health,
-                                    float pressure_pa, float altitude, float temperature_c, float R,
+static void assess_baro_measurement(const kalman_hv_t *kf_pred, float pressure_pa, float altitude,
+                                    float temperature_c, float R,
                                     baro_measurement_t *out)
 {
     out->pressure_pa = pressure_pa;
@@ -240,40 +221,8 @@ static void assess_baro_measurement(const kalman_hv_t *kf_pred, baro_health_t *h
     float nis = kf_compute_nis(kf_pred, altitude, R, NULL, NULL);
     out->nis = nis;
 
-    update_baro_health(health, nis);
-
-    // accepted is a per cycle decision
-    out->accepted = health->healthy && (nis < BARO_NIS_HARD_REJECT);
-}
-
-static bool kf_try_init_from_baro(kalman_hv_t *kf, const baro_measurement_t *m0,
-                                  const baro_measurement_t *m1, float R0, float R1)
-{
-    bool initialized = false;
-
-    if (m0->valid && m1->valid) {
-        // Average both to reduce initial bias
-        kf->h = 0.5f * (m0->altitude + m1->altitude);
-        kf->P00 = 0.5f * (R0 + R1);
-        initialized = true;
-    } else if (m0->valid) {
-        kf->h = m0->altitude;
-        kf->P00 = R0;
-        initialized = true;
-    } else if (m1->valid) {
-        kf->h = m1->altitude;
-        kf->P00 = R1;
-        initialized = true;
-    }
-
-    if (initialized) {
-        kf->v = 0.0f;
-        kf->P01 = 0.0f;
-        kf->P10 = 0.0f;
-        kf->P11 = 100.0f;
-    }
-
-    return initialized;
+    /* Never reject a valid reading due to NIS. This is because we have no great way to test rejection thresholds on the ground. Perhaps after the first launch of this system we can analyze NIS values and set a threshold for future flights, but for now we will log NIS but accept all valid readings. Essentially, we are relying on successive measurements and the Kalman filter to smooth out any bad readings for state transitions. */
+    out->accepted = true;
 }
 
 static void log_baro(const char *name, const baro_measurement_t *m, const baro_health_t *h)
@@ -286,15 +235,16 @@ static void log_baro(const char *name, const baro_measurement_t *m, const baro_h
         return;
     }
 
-    LOG_INF("%s: p=%.1f Pa | alt=%.2f m | T=%.2f C | nis=%.2f | faults=%d | %s", name,
+    LOG_INF("%s: p=%.1f Pa | alt=%.2f m | T=%.2f C | nis=%.2f | healthy=%d | %s", name,
             (double)m->pressure_pa, (double)m->altitude, (double)m->temperature_c, (double)m->nis,
-            h->fault_count, m->accepted ? "ACCEPTED" : "REJECTED");
+        h->healthy ? 1 : 0, m->accepted ? "ACCEPTED" : "REJECTED");
 }
 
 static void baro_thread_fn(void *p1, void *p2, void *p3)
 {
     const struct device *baro0 = DEVICE_DT_GET(DT_ALIAS(baro0));
     const struct device *baro1 = DEVICE_DT_GET(DT_ALIAS(baro1));
+    bool using_baro0 = false;
 
     bool baro0_ready = device_is_ready(baro0);
     bool baro1_ready = device_is_ready(baro1);
@@ -304,14 +254,12 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
         return;
     }
 
-    if (!baro0_ready) {
-        LOG_WRN("BARO0 not ready; continuing with BARO1 only");
-        baro0 = NULL;
-    }
-
-    if (!baro1_ready) {
-        LOG_WRN("BARO1 not ready; continuing with BARO0 only");
-        baro1 = NULL;
+    if (baro0_ready) {
+        using_baro0 = true;
+        LOG_INF("Using BARO0 as primary barometer");
+    } else {
+        using_baro0 = false;
+        LOG_WRN("BARO0 not ready at startup; falling back to BARO1");
     }
 
     /* Filter init:
@@ -321,8 +269,8 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
     */
     kalman_hv_t kf = {.h = 0.0f, .v = 0.0f, .P00 = 25.0f, .P01 = 0.0f, .P10 = 0.0f, .P11 = 100.0f};
 
-    baro_health_t health_0 = {0, true};
-    baro_health_t health_1 = {0, true};
+    baro_health_t health_0 = {.healthy = baro0_ready};
+    baro_health_t health_1 = {.healthy = baro1_ready};
 
     bool kf_initialized = false;
 
@@ -352,45 +300,58 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
         baro_measurement_t measurement_0 = {0};
         baro_measurement_t measurement_1 = {0};
 
-        // Read both (only if devices exist)
+        // Read both sensors for telemetry publication (if they initialized ready)
         float p0 = 0.0f, a0 = 0.0f, t0 = 0.0f;
         float p1 = 0.0f, a1 = 0.0f, t1 = 0.0f;
 
-        bool valid_reading_0 = (baro0 != NULL) ? read_baro(baro0, &p0, &a0, &t0) : false;
-        bool valid_reading_1 = (baro1 != NULL) ? read_baro(baro1, &p1, &a1, &t1) : false;
-
-        if (valid_reading_0) {
-            assess_baro_measurement(&kf_pred, &health_0, p0, a0, t0, R0, &measurement_0);
+        if (baro0_ready) {
+            bool valid_reading_0 = read_baro(baro0, &p0, &a0, &t0);
+            if (valid_reading_0) {
+                assess_baro_measurement(&kf_pred, p0, a0, t0, R0, &measurement_0);
+            } else {
+                measurement_0.valid = false;
+            }
         } else {
             measurement_0.valid = false;
-            update_baro_health(&health_0, BARO_NIS_HARD_REJECT);
         }
 
-        if (valid_reading_1) {
-            assess_baro_measurement(&kf_pred, &health_1, p1, a1, t1, R1, &measurement_1);
+        if (baro1_ready) {
+            bool valid_reading_1 = read_baro(baro1, &p1, &a1, &t1);
+            if (valid_reading_1) {
+                assess_baro_measurement(&kf_pred, p1, a1, t1, R1, &measurement_1);
+            } else {
+                measurement_1.valid = false;
+            }
         } else {
             measurement_1.valid = false;
-            update_baro_health(&health_1, BARO_NIS_HARD_REJECT);
         }
 
         if (!kf_initialized) {
-            kf_initialized = kf_try_init_from_baro(&kf, &measurement_0, &measurement_1, R0, R1);
+            if (using_baro0 && measurement_0.valid) {
+                kf.h = measurement_0.altitude;
+                kf.v = 0.0f;
+                kf.P00 = R0;
+                kf.P01 = 0.0f;
+                kf.P10 = 0.0f;
+                kf.P11 = 100.0f;
+                kf_initialized = true;
+            } else if (!using_baro0 && measurement_1.valid) {
+                kf.h = measurement_1.altitude;
+                kf.v = 0.0f;
+                kf.P00 = R1;
+                kf.P01 = 0.0f;
+                kf.P10 = 0.0f;
+                kf.P11 = 100.0f;
+                kf_initialized = true;
+            }
         }
 
-        // Apply measurement updates: update the more trusted sensor first (smaller R)
-        if (measurement_0.valid && measurement_0.accepted && measurement_1.valid &&
-            measurement_1.accepted) {
-            if (R0 <= R1) {
-                kf_update_baro(&kf, measurement_0.altitude, R0);
-                kf_update_baro(&kf, measurement_1.altitude, R1);
-            } else {
-                kf_update_baro(&kf, measurement_1.altitude, R1);
-                kf_update_baro(&kf, measurement_0.altitude, R0);
-            }
-        } else {
+        // Apply measurement update from only the selected barometer
+        if (using_baro0) {
             if (measurement_0.valid && measurement_0.accepted) {
                 kf_update_baro(&kf, measurement_0.altitude, R0);
             }
+        } else {
             if (measurement_1.valid && measurement_1.accepted) {
                 kf_update_baro(&kf, measurement_1.altitude, R1);
             }
@@ -407,13 +368,13 @@ static void baro_thread_fn(void *p1, void *p2, void *p3)
                                            .altitude = measurement_0.altitude,
                                            .temperature = measurement_0.temperature_c,
                                            .nis = measurement_0.nis,
-                                           .faults = health_0.fault_count,
+                                           .faults = 0,
                                            .healthy = health_0.healthy},
                                  .baro1 = {.pressure = measurement_1.pressure_pa,
                                            .altitude = measurement_1.altitude,
                                            .temperature = measurement_1.temperature_c,
                                            .nis = measurement_1.nis,
-                                           .faults = health_1.fault_count,
+                                           .faults = 0,
                                            .healthy = health_1.healthy},
                                  .altitude = kf.h,
                                  .altitude_agl = st.ground_calibrated ? kf.h - st.ground_altitude : 0.0f,
