@@ -14,7 +14,7 @@ static flight_state_id_t update_drogue_descent(struct flight_sm *sm, const state
 
     if (repeated_check_update(&sm->drogue_main_check, below_main_alt, MAIN_DEPLOY_CHECKS)) {
         if (!sm->drogue_fire_triggered) {
-            reset_required_check(&sm->drogue_main_check);
+            reset_repeated_check(&sm->drogue_main_check);
             return FLIGHT_STATE_DROGUE_DESCENT;
         }
         return FLIGHT_STATE_MAIN_DESCENT;
