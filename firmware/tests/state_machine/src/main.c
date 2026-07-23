@@ -148,6 +148,17 @@ static int64_t transition_from_mach_lock(float ground_altitude, int64_t start_t)
 static int64_t transition_to_main_descent(float ground_altitude, int64_t start_t)
 {
     int64_t t = start_t;
+
+    // Main deploy requires the drogue to have fired first: step past the
+    // drogue deploy delay while still above the main deploy altitude
+    float high_alt = ground_altitude + MAIN_DEPLOY_ALTITUDE_M + 1.0f;
+    while (t <= start_t + DROGUE_DEPLOY_DELAY_MS) {
+        t += 100;
+        state_machine_test_step(high_alt, 0.0f, t);
+    }
+    zassert_true(state_machine_test_get_drogue_fire_triggered(),
+                 "drogue should fire before main deploy is allowed");
+
     // Transition to main descent: relative altitude must be below threshold
     float main_alt = ground_altitude + MAIN_DEPLOY_ALTITUDE_M - 1.0f;
     for (int i = 0; i < MAIN_DEPLOY_CHECKS; i++) {
