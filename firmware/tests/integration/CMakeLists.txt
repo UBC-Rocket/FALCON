@@ -20,6 +20,8 @@ target_sources(app PRIVATE
     ../../src/state_machine/states/main_descent.c
     ../../src/state_machine/states/landed.c
     ../../src/pyro/pyro_thread.c
+    ../../src/camera/vtx_power.c
+    ../../src/camera/runcam.c
 )
 
 target_include_directories(app PRIVATE

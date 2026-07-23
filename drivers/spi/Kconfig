@@ -1,3 +1,4 @@
 if SPI
 rsource "sim_pyro/Kconfig"
+rsource "sim_radio/Kconfig"
 endif # SPI

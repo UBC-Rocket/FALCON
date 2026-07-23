@@ -1,0 +1,12 @@
+description: Simulated GNSS/Radio Device
+
+compatible: "zephyr,sim-radio"
+
+include: [spi-device.yaml]
+
+properties:
+  reg:
+    required: true
+
+  spi-max-frequency:
+    required: true

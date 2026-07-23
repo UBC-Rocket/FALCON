@@ -4,6 +4,7 @@
 #include "data.h"
 #include "state_machine_config.h"
 #include "state_machine_test.h"
+#include "stubs.h"
 
 LOG_MODULE_REGISTER(state_machine_test, LOG_LEVEL_INF);
 
@@ -324,6 +325,27 @@ ZTEST(state_machine, test_main_to_landed)
 
     state_machine_test_setup_state(FLIGHT_STATE_MAIN_DESCENT, ground_altitude, t);
     transition_to_landed(ground_altitude, t);
+}
+
+ZTEST(state_machine, test_landed_shuts_down_cameras)
+{
+    float ground_altitude = 100.0f;
+    int64_t t = 0;
+
+    state_machine_test_setup_state(FLIGHT_STATE_MAIN_DESCENT, ground_altitude, t);
+    stubs_reset();
+
+    transition_to_landed(ground_altitude, t);
+
+    // Landing must stop the RunCam recording, then cut VTX/RunCam power
+    zassert_equal(stub_runcam_stop_calls, 1, "landing should stop RunCam recording once");
+    zassert_equal(stub_vtx_power_set_calls, 1, "landing should switch VTX power once");
+    zassert_false(stub_vtx_power_last, "landing should power the VTX/RunCam off");
+
+    // Staying in the landed state must not re-send shutdown commands
+    state_machine_test_step(ground_altitude + 1.0f, 0.0f, t + 100);
+    zassert_equal(stub_runcam_stop_calls, 1, "landed steady state should not resend commands");
+    zassert_equal(stub_vtx_power_set_calls, 1, "landed steady state should not resend commands");
 }
 
 ZTEST(state_machine, test_full_flight_sequence)

@@ -30,7 +30,16 @@
 		};
 	};
 
+	outputs {
+		compatible = "gpio-leds";
 
+		// PLACEHOLDER: VTX/RunCam power switch pin and active level are
+		// unconfirmed -- verify with the hardware team before flight.
+		vtx_pwr: vtx-pwr {
+			gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>;
+			label = "VTX RunCam Power";
+		};
+	};
 
 	aliases {
         led0 = &green_led;
@@ -42,7 +51,20 @@
         pyro0 = &pyro0;
         radio0 = &radio0;
         sdmmc1 = &sdmmc1;
+        vtx-pwr = &vtx_pwr;
+        runcam-uart = &usart2;
     };
+};
+
+// RunCam control UART
+// PLACEHOLDER: which USART goes to the RunCam (and its pins/baud) is
+// unconfirmed -- verify with the hardware team. USART2 on PA2/PA3 at the
+// RunCam Device Protocol default baud is assumed for now.
+&usart2 {
+    status = "okay";
+    pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
+    pinctrl-names = "default";
+    current-speed = <115200>;
 };
 
 // Enable and configure SPI2

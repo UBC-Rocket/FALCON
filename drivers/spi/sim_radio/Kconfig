@@ -1,0 +1,3 @@
+config SIM_RADIO
+    bool "Simulated GNSS/Radio Board"
+    depends on DT_HAS_ZEPHYR_SIM_RADIO_ENABLED

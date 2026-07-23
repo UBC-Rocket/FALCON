@@ -76,12 +76,20 @@ struct gps_data {
     int64_t timestamp;
 };
 
+// VTX/RunCam status (shared between command executor, state machine and radio)
+struct camera_data {
+    bool vtx_power_on; // VTX/RunCam power switch state
+    bool recording;    // RunCam recording state (optimistic, no protocol ack)
+    int64_t timestamp;
+};
+
 // Global instances
 extern struct imu_data g_imu_data;
 extern struct baro_data g_baro_data;
 extern struct state_data g_state_data;
 extern struct pyro_data g_pyro_data;
 extern struct gps_data g_gps_data;
+extern struct camera_data g_camera_data;
 
 // Getters and setters
 void set_imu_data(const struct imu_data *src);
@@ -98,5 +106,8 @@ void get_pyro_data(struct pyro_data *dst);
 
 void set_gps_data(const struct gps_data *src);
 void get_gps_data(struct gps_data *dst);
+
+void set_camera_data(const struct camera_data *src);
+void get_camera_data(struct camera_data *dst);
 
 #endif
