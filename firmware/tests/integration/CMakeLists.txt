@@ -2,6 +2,8 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
+set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../..)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(cloudburst_integration_test)
 
@@ -18,6 +20,8 @@ target_sources(app PRIVATE
     ../../src/state_machine/states/main_descent.c
     ../../src/state_machine/states/landed.c
     ../../src/pyro/pyro_thread.c
+    ../../src/camera/vtx_power.c
+    ../../src/camera/runcam.c
 )
 
 target_include_directories(app PRIVATE

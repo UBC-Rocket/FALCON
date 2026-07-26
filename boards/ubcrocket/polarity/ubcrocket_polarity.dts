@@ -30,7 +30,16 @@
 		};
 	};
 
+	outputs {
+		compatible = "gpio-leds";
 
+		// VTX/RunCam power switch on PD6 (confirmed by hardware team).
+		// Active level assumed high.
+		vtx_pwr: vtx-pwr {
+			gpios = <&gpiod 6 GPIO_ACTIVE_HIGH>;
+			label = "VTX RunCam Power";
+		};
+	};
 
 	aliases {
         led0 = &green_led;
@@ -42,7 +51,35 @@
         pyro0 = &pyro0;
         radio0 = &radio0;
         sdmmc1 = &sdmmc1;
+        vtx-pwr = &vtx_pwr;
+        runcam-uart = &uart4;
+        rfd-uart = &usart2;
     };
+};
+
+// RunCam control UART on UART4 (confirmed by hardware team).
+// PLACEHOLDER: the UART4 pin pair is unconfirmed -- PA0/PA1 assumed
+// (package also offers PA12/PA11, PB9/PB8, PD1/PD0, PD12/PD11; PC10/PC11
+// are taken by SDMMC). Baud is the RunCam Device Protocol default.
+&uart4 {
+    status = "okay";
+    pinctrl-0 = <&uart4_tx_pa0 &uart4_rx_pa1>;
+    pinctrl-names = "default";
+    current-speed = <115200>;
+};
+
+// RFD900x modem serial for remote AT reconfiguration (checklist Phase 4).
+// PLACEHOLDER: the physical path FALCON -> modem serial is unconfirmed --
+// today the modem's data serial is fed by the ulysses-gnss-radio board. A
+// direct line on USART2 (PA2/PA3) at the RFD900x default baud (57600) is
+// assumed; if the real path turns out to be AT-passthrough via the GNSS
+// board, drop this node and swap the transport in
+// firmware/src/radio/rfd900x.c (the AT session engine is transport-agnostic).
+&usart2 {
+    status = "okay";
+    pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
+    pinctrl-names = "default";
+    current-speed = <57600>;
 };
 
 // Enable and configure SPI2

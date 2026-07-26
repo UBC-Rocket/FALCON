@@ -168,11 +168,23 @@ ZTEST(integration, test_full_flight_sequence)
     LOG_INF("\n=== PHASE 7: LANDED ===");
     LOG_INF("Injecting velocity < %.2f m/s", LANDED_VELOCITY_THRESHOLD_MPS);
     
-    inject_and_wait(3.0, LANDED_VELOCITY_THRESHOLD_MPS - 1.0, 
+    inject_and_wait(3.0, LANDED_VELOCITY_THRESHOLD_MPS - 1.0,
                     LANDED_CHECKS * LANDED_CHECK_INTERVAL_MS + 1.0);
-    
+
     k_sleep(K_SECONDS(1));
-    
+
+    /* Landing must shut down the cameras: recording stopped, VTX power off */
+    struct camera_data camera_status;
+    get_camera_data(&camera_status);
+    if (camera_status.recording) {
+        LOG_ERR("RunCam still recording after landing");
+        test_failed = true;
+    }
+    if (camera_status.vtx_power_on) {
+        LOG_ERR("VTX/RunCam still powered after landing");
+        test_failed = true;
+    }
+
     /* Final test result */
     LOG_INF("\n========================================");
     if (test_failed) {

@@ -32,8 +32,8 @@ include(nanopb)
 
 # Generate protobuf sources from falcon-protos
 set(FALCON_PROTOS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../modules/falcon-protos)
-zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/HelloWorldPacket.proto)
 zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/TelemetryPacket.proto)
+zephyr_nanopb_sources(app ${FALCON_PROTOS_DIR}/GroundCommand.proto)
 
 # LwGPS NMEA parser library
 set(LWGPS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../modules/lwgps)
@@ -54,6 +54,12 @@ target_sources(app PRIVATE
   src/state_machine/states/landed.c
   src/pyro/pyro_thread.c
   src/radio/radio_thread.c
+  src/radio/gnss_spi.c
+  src/radio/command_thread.c
+  src/radio/rfd900x_at.c
+  src/radio/rfd900x.c
+  src/camera/vtx_power.c
+  src/camera/runcam.c
   src/gps/gps_thread.c
   ${LWGPS_DIR}/lwgps/src/lwgps/lwgps.c
 )

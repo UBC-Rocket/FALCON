@@ -1,0 +1,113 @@
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/spi.h>
+#include <zephyr/logging/log.h>
+#include <string.h>
+#include "gnss_spi.h"
+#include "uplink_config.h"
+
+LOG_MODULE_REGISTER(gnss_spi, LOG_LEVEL_INF);
+
+/* SPI protocol opcodes (ulysses-gnss-radio spec) */
+#define SPI_CMD_RADIO_TX 0x04
+#define SPI_CMD_GPS_RX 0x05
+/* Radio RX opcode is a placeholder, see uplink_config.h */
+
+#define SPI_RADIO_TX_SIZE (GNSS_SPI_HEADER_SIZE + GNSS_SPI_MAX_COBS_SIZE)  /* 261 */
+#define SPI_GPS_RX_SIZE (GNSS_SPI_HEADER_SIZE + GNSS_SPI_GPS_PAYLOAD_SIZE) /* 92 */
+#define SPI_RADIO_RX_SIZE (GNSS_SPI_HEADER_SIZE + GNSS_SPI_MAX_COBS_SIZE)  /* 261 */
+
+static const struct spi_dt_spec gnss_spi =
+    SPI_DT_SPEC_GET(DT_ALIAS(radio0), SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_WORD_SET(8));
+
+/* Serializes the three consumers of the GNSS/radio board (telemetry TX,
+ * GPS RX, radio command RX). */
+K_MUTEX_DEFINE(gnss_spi_mutex);
+
+bool gnss_spi_ready(void)
+{
+    return spi_is_ready_dt(&gnss_spi);
+}
+
+int gnss_spi_radio_tx(const uint8_t *cobs_data, size_t cobs_len)
+{
+    uint8_t tx_buf[SPI_RADIO_TX_SIZE] = {0};
+
+    if (cobs_len > GNSS_SPI_MAX_COBS_SIZE) {
+        return -EINVAL;
+    }
+
+    tx_buf[0] = SPI_CMD_RADIO_TX;
+    /* bytes 1-4 are dummy, remaining payload zero-padded (already zeroed) */
+    memcpy(&tx_buf[GNSS_SPI_HEADER_SIZE], cobs_data, cobs_len);
+
+    const struct spi_buf spi_tx = {
+        .buf = tx_buf,
+        .len = sizeof(tx_buf),
+    };
+    const struct spi_buf_set tx_set = {
+        .buffers = &spi_tx,
+        .count = 1,
+    };
+
+    k_mutex_lock(&gnss_spi_mutex, K_FOREVER);
+    int ret = spi_write_dt(&gnss_spi, &tx_set);
+    k_mutex_unlock(&gnss_spi_mutex);
+
+    return ret;
+}
+
+/**
+ * @brief Full-duplex read transaction: [CMD][dummy][zeros] out, payload in
+ */
+static int gnss_spi_read(uint8_t cmd, uint8_t *payload_out, size_t payload_size)
+{
+    uint8_t tx_buf[SPI_RADIO_RX_SIZE] = {0};
+    uint8_t rx_buf[SPI_RADIO_RX_SIZE] = {0};
+    size_t transfer_size = GNSS_SPI_HEADER_SIZE + payload_size;
+
+    tx_buf[0] = cmd;
+    /* bytes 1-4 are dummy, rest is zero (master clocks out zeros) */
+
+    const struct spi_buf spi_tx = {
+        .buf = tx_buf,
+        .len = transfer_size,
+    };
+    const struct spi_buf_set tx_set = {
+        .buffers = &spi_tx,
+        .count = 1,
+    };
+
+    const struct spi_buf spi_rx = {
+        .buf = rx_buf,
+        .len = transfer_size,
+    };
+    const struct spi_buf_set rx_set = {
+        .buffers = &spi_rx,
+        .count = 1,
+    };
+
+    k_mutex_lock(&gnss_spi_mutex, K_FOREVER);
+    int ret = spi_transceive_dt(&gnss_spi, &tx_set, &rx_set);
+    k_mutex_unlock(&gnss_spi_mutex);
+
+    if (ret < 0) {
+        return ret;
+    }
+
+    /* Payload starts after header (cmd + dummy bytes) */
+    memcpy(payload_out, &rx_buf[GNSS_SPI_HEADER_SIZE], payload_size);
+
+    return 0;
+}
+
+int gnss_spi_gps_read(uint8_t *payload_out)
+{
+    return gnss_spi_read(SPI_CMD_GPS_RX, payload_out, GNSS_SPI_GPS_PAYLOAD_SIZE);
+}
+
+int gnss_spi_radio_rx(uint8_t *payload_out)
+{
+    return gnss_spi_read(UPLINK_SPI_CMD_RADIO_RX, payload_out, GNSS_SPI_MAX_COBS_SIZE);
+}

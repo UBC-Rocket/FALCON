@@ -41,6 +41,7 @@
         accel0 = &sim_accel0;
         gyro0 = &sim_gyro0;
         pyro0 = &sim_pyro0;
+        radio0 = &sim_radio0;
         sdmmc1 = &sim_sdmmc1;
         ramdisk0 = &sim_ramdisk0;
     };
@@ -52,6 +53,13 @@
     sim_pyro0: sim_pyro0@0 {
         compatible = "zephyr,sim-pyro";
         reg = <0>;
+        spi-max-frequency = <1000000>;
+        status = "okay";
+    };
+
+    sim_radio0: sim_radio0@1 {
+        compatible = "zephyr,sim-radio";
+        reg = <1>;
         spi-max-frequency = <1000000>;
         status = "okay";
     };

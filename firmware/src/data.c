@@ -10,6 +10,7 @@ struct baro_data g_baro_data;
 struct state_data g_state_data;
 struct pyro_data g_pyro_data;
 struct gps_data g_gps_data;
+struct camera_data g_camera_data;
 
 // Mutexes for thread safety
 K_MUTEX_DEFINE(imu_mutex);
@@ -17,6 +18,7 @@ K_MUTEX_DEFINE(baro_mutex);
 K_MUTEX_DEFINE(state_mutex);
 K_MUTEX_DEFINE(pyro_data_mutex);
 K_MUTEX_DEFINE(gps_mutex);
+K_MUTEX_DEFINE(camera_mutex);
 
 // Setter functions
 void set_imu_data(const struct imu_data *src)
@@ -121,4 +123,26 @@ void get_gps_data(struct gps_data *dst)
     k_mutex_lock(&gps_mutex, K_FOREVER);
     *dst = g_gps_data;
     k_mutex_unlock(&gps_mutex);
+}
+
+void set_camera_data(const struct camera_data *src)
+{
+    k_mutex_lock(&camera_mutex, K_FOREVER);
+
+    if (src->vtx_power_on != g_camera_data.vtx_power_on) {
+        LOG_INF("Camera: vtx_power_on -> %d", src->vtx_power_on);
+    }
+    if (src->recording != g_camera_data.recording) {
+        LOG_INF("Camera: recording -> %d", src->recording);
+    }
+
+    g_camera_data = *src;
+    k_mutex_unlock(&camera_mutex);
+}
+
+void get_camera_data(struct camera_data *dst)
+{
+    k_mutex_lock(&camera_mutex, K_FOREVER);
+    *dst = g_camera_data;
+    k_mutex_unlock(&camera_mutex);
 }

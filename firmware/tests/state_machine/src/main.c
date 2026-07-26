@@ -4,6 +4,7 @@
 #include "data.h"
 #include "state_machine_config.h"
 #include "state_machine_test.h"
+#include "stubs.h"
 
 LOG_MODULE_REGISTER(state_machine_test, LOG_LEVEL_INF);
 
@@ -148,6 +149,17 @@ static int64_t transition_from_mach_lock(float ground_altitude, int64_t start_t)
 static int64_t transition_to_main_descent(float ground_altitude, int64_t start_t)
 {
     int64_t t = start_t;
+
+    // Main deploy requires the drogue to have fired first: step past the
+    // drogue deploy delay while still above the main deploy altitude
+    float high_alt = ground_altitude + MAIN_DEPLOY_ALTITUDE_M + 1.0f;
+    while (t <= start_t + DROGUE_DEPLOY_DELAY_MS) {
+        t += 100;
+        state_machine_test_step(high_alt, 0.0f, t);
+    }
+    zassert_true(state_machine_test_get_drogue_fire_triggered(),
+                 "drogue should fire before main deploy is allowed");
+
     // Transition to main descent: relative altitude must be below threshold
     float main_alt = ground_altitude + MAIN_DEPLOY_ALTITUDE_M - 1.0f;
     for (int i = 0; i < MAIN_DEPLOY_CHECKS; i++) {
@@ -313,6 +325,28 @@ ZTEST(state_machine, test_main_to_landed)
 
     state_machine_test_setup_state(FLIGHT_STATE_MAIN_DESCENT, ground_altitude, t);
     transition_to_landed(ground_altitude, t);
+}
+
+ZTEST(state_machine, test_landed_shuts_down_cameras)
+{
+    float ground_altitude = 100.0f;
+    int64_t t = 0;
+
+    state_machine_test_setup_state(FLIGHT_STATE_MAIN_DESCENT, ground_altitude, t);
+    stubs_reset();
+
+    transition_to_landed(ground_altitude, t);
+
+    // Landing cuts VTX/RunCam power; no RunCam UART stop is sent (the
+    // camera auto-records while powered, runcam module is dormant)
+    zassert_equal(stub_runcam_stop_calls, 0, "landing should not send RunCam commands");
+    zassert_equal(stub_vtx_power_set_calls, 1, "landing should switch VTX power once");
+    zassert_false(stub_vtx_power_last, "landing should power the VTX/RunCam off");
+
+    // Staying in the landed state must not re-send shutdown commands
+    state_machine_test_step(ground_altitude + 1.0f, 0.0f, t + 100);
+    zassert_equal(stub_runcam_stop_calls, 0, "landed steady state should not send commands");
+    zassert_equal(stub_vtx_power_set_calls, 1, "landed steady state should not resend commands");
 }
 
 ZTEST(state_machine, test_full_flight_sequence)

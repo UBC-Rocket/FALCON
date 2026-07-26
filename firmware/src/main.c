@@ -9,6 +9,7 @@
 #include "state_machine/state_machine.h"
 #include "pyro/pyro_thread.h"
 #include "radio/radio_thread.h"
+#include "radio/command_thread.h"
 #include "gps/gps_thread.h"
 #include "data.h"
 
@@ -26,6 +27,7 @@ int main(void)
     start_state_machine_thread();
     start_radio_thread();
     start_gps_thread();
+    start_command_threads();
 
     return 0;
 }
