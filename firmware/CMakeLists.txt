@@ -56,6 +56,8 @@ target_sources(app PRIVATE
   src/radio/radio_thread.c
   src/radio/gnss_spi.c
   src/radio/command_thread.c
+  src/radio/rfd900x_at.c
+  src/radio/rfd900x.c
   src/camera/vtx_power.c
   src/camera/runcam.c
   src/gps/gps_thread.c
