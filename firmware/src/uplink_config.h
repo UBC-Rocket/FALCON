@@ -7,11 +7,10 @@
  * Every value below is a PLACEHOLDER pending confirmation from the team.
  * When the real value is known, changing it here is the only edit needed.
  *
- * Placeholders that live in the devicetree instead of this header
- * (boards/ubcrocket/polarity/ubcrocket_polarity.dts):
- *   - vtx-pwr GPIO (currently PB0, active high) -- confirm with hardware team
- *   - runcam-uart port/pins/baud (currently USART2 on PA2/PA3 @ 115200)
- *     -- confirm with hardware team
+ * Confirmed by the hardware team (live in the devicetree,
+ * boards/ubcrocket/polarity/ubcrocket_polarity.dts):
+ *   - vtx-pwr GPIO: PD6 (active level assumed high)
+ *   - runcam-uart port: UART4 (pin pair still unconfirmed, PA0/PA1 assumed)
  */
 
 /*
@@ -29,6 +28,11 @@
  * frame = [0xCC][command id][payload...][CRC8 poly 0xD5 over all prior bytes].
  * Note the protocol defines no response for CAMERA_CONTROL, so recording
  * state is updated optimistically until an ack mechanism is confirmed.
+ *
+ * DORMANT: the RunCam has auto-recording enabled, so nothing currently
+ * sends these frames -- recording follows the VTX power rail. The runcam
+ * module is kept for when the protobufs are reworked to carry RunCam
+ * commands.
  */
 #define RUNCAM_PROTO_HEADER 0xCC
 #define RUNCAM_CMD_CAMERA_CONTROL 0x01
