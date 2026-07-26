@@ -68,15 +68,15 @@
     current-speed = <115200>;
 };
 
-// RFD900x modem serial for remote AT reconfiguration (checklist Phase 4).
-// PLACEHOLDER: the physical path FALCON -> modem serial is unconfirmed --
-// today the modem's data serial is fed by the ulysses-gnss-radio board. A
-// direct line on USART2 (PA2/PA3) at the RFD900x default baud (57600) is
-// assumed; if the real path turns out to be AT-passthrough via the GNSS
-// board, drop this node and swap the transport in
-// firmware/src/radio/rfd900x.c (the AT session engine is transport-agnostic).
+// RFD900x modem serial: DISABLED per hardware team (2026-07-26).
+// The PA2/PA3 direct-line assumption from the two-way radio feature was
+// wrong -- the modem's data serial is fed by the ulysses-gnss-radio board,
+// and FALCON driving PA2 as a UART TX contends with that path. Keep the
+// node disabled so rfd900x.c falls back to its simulated transport; when
+// the real reconfig path is confirmed (likely AT-passthrough via the GNSS
+// board), swap the transport in firmware/src/radio/rfd900x.c.
 &usart2 {
-    status = "okay";
+    status = "disabled";
     pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
     pinctrl-names = "default";
     current-speed = <57600>;

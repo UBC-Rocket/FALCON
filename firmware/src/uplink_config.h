@@ -48,11 +48,11 @@
 /*
  * RFD900x remote reconfiguration (checklist Phase 4).
  *
- * PLACEHOLDER: the physical path FALCON -> modem serial is unconfirmed
- * (direct UART assumed, see the rfd-uart alias in the devicetree; if the
- * real path is AT-passthrough via the GNSS board, swap the transport in
- * firmware/src/radio/rfd900x.c -- the AT session engine is
- * transport-agnostic).
+ * The direct-UART path (USART2/PA2-PA3) is DISABLED per the hardware team
+ * (2026-07-26): the modem serial is fed by the GNSS board, and FALCON
+ * driving PA2 contends with it. rfd900x.c runs its simulated transport
+ * until the real reconfig path is confirmed (likely AT-passthrough via
+ * the GNSS board) -- the AT session engine is transport-agnostic.
  *
  * Timing follows the SiK/RFD900x AT spec: 1 s of serial silence before
  * "+++" (no CR/LF), and roughly 1 s more before the modem answers "OK".

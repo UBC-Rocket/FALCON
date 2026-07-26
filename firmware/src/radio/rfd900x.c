@@ -9,7 +9,7 @@
 
 LOG_MODULE_REGISTER(rfd900x, LOG_LEVEL_INF);
 
-#if DT_NODE_EXISTS(DT_ALIAS(rfd_uart))
+#if DT_NODE_HAS_STATUS(DT_ALIAS(rfd_uart), okay)
 
 static const struct device *const rfd_uart = DEVICE_DT_GET(DT_ALIAS(rfd_uart));
 
@@ -76,11 +76,13 @@ int rfd900x_apply_config(const RfdConfig *cfg)
     return ret;
 }
 
-#else /* no rfd-uart devicetree alias (e.g. native_sim): simulate the modem */
+#else /* rfd-uart absent or disabled (native_sim, or hardware team says
+       * UART2 must stay off -- see the usart2 node in the board dts):
+       * simulate the modem */
 
 int rfd900x_init(void)
 {
-    LOG_WRN("No rfd-uart devicetree alias; simulating RFD900x config");
+    LOG_WRN("No usable rfd-uart devicetree alias; simulating RFD900x config");
     return 0;
 }
 
