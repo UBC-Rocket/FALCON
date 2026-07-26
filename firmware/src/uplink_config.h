@@ -4,8 +4,9 @@
 /*
  * Two-way radio uplink: NOT-YET-CONFIRMED constants, collected in one place.
  *
- * Every value below is a PLACEHOLDER pending confirmation from the team.
- * When the real value is known, changing it here is the only edit needed.
+ * Values below are PLACEHOLDERS pending confirmation from the team unless
+ * marked CONFIRMED. When a real value is known, changing it here is the
+ * only edit needed.
  *
  * Confirmed by the hardware team (live in the devicetree,
  * boards/ubcrocket/polarity/ubcrocket_polarity.dts):
@@ -14,13 +15,17 @@
  */
 
 /*
- * PLACEHOLDER: SPI opcode for reading received radio bytes from the
- * ulysses-gnss-radio board. Confirm opcode and framing with the
- * GNSS-firmware owner. Framing is assumed to mirror the GPS read (0x05):
- * [CMD:1][DUMMY:4][PAYLOAD:256], payload holding one COBS-encoded frame
- * (protobuf + CRC16, 0x00 terminated), zero-filled when nothing is pending.
+ * CONFIRMED (2026-07-26, ulysses-gnss-radio Core/Inc/protocol_config.h):
+ * SPI opcode for reading received radio bytes from the ulysses-gnss-radio
+ * board -- CMD_RADIO_RX_FIFO, oldest message first so uplinked commands are
+ * processed in the order the ground sent them (0x01 is the LIFO variant).
+ * Framing mirrors the GPS read (0x05): [CMD:1][DUMMY:4][PAYLOAD:256].
+ * The GNSS board splits the radio UART stream on 0x00, strips the
+ * terminator, and zero-pads each message into a 256-byte queue slot, so
+ * the payload holds one COBS-encoded frame (protobuf + CRC16) whose zero
+ * padding acts as the delimiter; all-zero when nothing is pending.
  */
-#define UPLINK_SPI_CMD_RADIO_RX 0x06
+#define UPLINK_SPI_CMD_RADIO_RX 0x02
 
 /*
  * PLACEHOLDER: RunCam UART command set -- waiting on David to confirm the
