@@ -9,6 +9,7 @@
 #include "gnss_spi.h"
 #include "camera/vtx_power.h"
 #include "camera/runcam.h"
+#include "rfd900x.h"
 
 LOG_MODULE_REGISTER(command_thread, LOG_LEVEL_INF);
 
@@ -179,6 +180,7 @@ static void command_exec_thread_fn(void *p1, void *p2, void *p3)
 {
     vtx_power_init();
     runcam_init();
+    rfd900x_init();
 
     while (1) {
         GroundCommand cmd;
@@ -192,13 +194,25 @@ static void command_exec_thread_fn(void *p1, void *p2, void *p3)
         case GroundCommand_camera_tag:
             execute_camera_command(&cmd.command.camera);
             break;
-        case GroundCommand_rfd_config_tag:
-            /* Per GroundCommand.proto, rfd_config is ground-local (applied
-             * to the ground-station modem) and should never reach FALCON.
-             * Rocket-side modem reconfiguration (checklist Phase 4) is on
-             * hold until the team resolves the discrepancy. */
-            LOG_WRN("Ignoring rfd_config command %u: ground-local per proto", cmd.command_id);
+        case GroundCommand_rfd_config_tag: {
+            /* Team decision (July 2026): FALCON applies rfd_config to the
+             * rocket-side modem, superseding the stale "ground-local"
+             * comment in GroundCommand.proto. Blocks this thread for
+             * several seconds (guard time + AT session); RX polling and
+             * queuing keep running meanwhile. */
+            int ret = rfd900x_apply_config(&cmd.command.rfd_config);
+
+            if (ret == 0) {
+                LOG_INF("RFD900x reconfig applied (command %u); link drops until "
+                        "the ground modem matches",
+                        cmd.command_id);
+            } else {
+                LOG_ERR("RFD900x reconfig failed (command %u): %d; modem keeps "
+                        "its previous config",
+                        cmd.command_id, ret);
+            }
             break;
+        }
         default:
             LOG_WRN("Command %u carries no payload", cmd.command_id);
             break;

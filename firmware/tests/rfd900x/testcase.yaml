@@ -1,0 +1,7 @@
+tests:
+    cloudburst.rfd900x:
+        platform_allow:
+          - ubcrocket_polarity
+          - native_sim/native/64
+        tags: radio
+        type: unit

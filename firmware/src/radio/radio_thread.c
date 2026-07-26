@@ -5,8 +5,10 @@
 #include <zephyr/net_buf.h>
 #include <pb_encode.h>
 #include <TelemetryPacket.pb.h>
+#include <zephyr/sys/atomic.h>
 #include "data.h"
 #include "gnss_spi.h"
+#include "radio_thread.h"
 
 LOG_MODULE_REGISTER(radio_thread, LOG_LEVEL_INF);
 
@@ -25,6 +27,14 @@ NET_BUF_POOL_DEFINE(cobs_dst_pool, 1, MAX_COBS_SIZE, 0, NULL);
 K_THREAD_STACK_DEFINE(radio_stack, RADIO_THREAD_STACK_SIZE);
 static struct k_thread radio_thread;
 
+/* Set while an RFD900x AT session needs serial silence toward the modem */
+static atomic_t radio_tx_suspended;
+
+void radio_tx_suspend(bool suspend)
+{
+	atomic_set(&radio_tx_suspended, suspend ? 1 : 0);
+}
+
 BUILD_ASSERT(MAX_FRAME_SIZE + MAX_FRAME_SIZE / 254 + 2 <= MAX_COBS_SIZE,
 	     "MAX_FRAME_SIZE too large for MAX_COBS_SIZE");
 
@@ -39,6 +49,11 @@ static void radio_thread_fn(void *p1, void *p2, void *p3)
 	LOG_INF("Radio SPI device ready");
 
 	while (1) {
+		if (atomic_get(&radio_tx_suspended)) {
+			k_sleep(K_MSEC(RADIO_THREAD_PERIOD_MS));
+			continue;
+		}
+
 		TelemetryPacket message = TelemetryPacket_init_zero;
 		uint8_t buffer[MAX_PAYLOAD_SIZE];
 
