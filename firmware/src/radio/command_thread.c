@@ -156,25 +156,19 @@ static void command_rx_thread_fn(void *p1, void *p2, void *p3)
 /**
  * @brief Apply a camera control command.
  *
- * Ordering: power on before starting a recording, stop a recording before
- * powering off, so combined commands behave sensibly.
+ * Only the power switch is acted on: the RunCam has auto-recording
+ * enabled, so recording follows the power rail. camera_recording is
+ * ignored until the protobufs are reworked to carry RunCam commands
+ * (the runcam module is kept but dormant until then).
  */
 static void execute_camera_command(const CameraControl *camera)
 {
-    if (camera->has_vtx_runcam_power && camera->vtx_runcam_power) {
-        vtx_power_set(true);
+    if (camera->has_vtx_runcam_power) {
+        vtx_power_set(camera->vtx_runcam_power);
     }
 
     if (camera->has_camera_recording) {
-        if (camera->camera_recording) {
-            runcam_start_recording();
-        } else {
-            runcam_stop_recording();
-        }
-    }
-
-    if (camera->has_vtx_runcam_power && !camera->vtx_runcam_power) {
-        vtx_power_set(false);
+        LOG_WRN("Ignoring camera_recording command: RunCam auto-records while powered");
     }
 }
 

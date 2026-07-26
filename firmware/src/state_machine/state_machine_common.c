@@ -2,7 +2,6 @@
 
 #include "state_machine_internal.h"
 #include "../pyro/pyro_thread.h"
-#include "../camera/runcam.h"
 #include "../camera/vtx_power.h"
 
 LOG_MODULE_DECLARE(state_machine);
@@ -82,15 +81,12 @@ void state_action_landed(void)
 {
     LOG_INF("The rocket has landed");
 
-    /* Stop the RunCam recording (graceful file close) before cutting power
-     * to the VTX/RunCam rail. Shared camera status is updated by each call
-     * so the final telemetry packets report both fields false. */
-    int ret = runcam_stop_recording();
-    if (ret != 0) {
-        LOG_ERR("Failed to stop RunCam recording: %d", ret);
-    }
-
-    ret = vtx_power_set(false);
+    /* Cut the VTX/RunCam power rail. The RunCam auto-records while
+     * powered, so this is also what ends the recording; no UART stop
+     * command is sent (runcam module is dormant pending the protobuf
+     * rework). Shared camera status is updated so the final telemetry
+     * packets report both fields false. */
+    int ret = vtx_power_set(false);
     if (ret != 0) {
         LOG_ERR("Failed to power off VTX/RunCam: %d", ret);
     }

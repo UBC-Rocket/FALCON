@@ -337,14 +337,15 @@ ZTEST(state_machine, test_landed_shuts_down_cameras)
 
     transition_to_landed(ground_altitude, t);
 
-    // Landing must stop the RunCam recording, then cut VTX/RunCam power
-    zassert_equal(stub_runcam_stop_calls, 1, "landing should stop RunCam recording once");
+    // Landing cuts VTX/RunCam power; no RunCam UART stop is sent (the
+    // camera auto-records while powered, runcam module is dormant)
+    zassert_equal(stub_runcam_stop_calls, 0, "landing should not send RunCam commands");
     zassert_equal(stub_vtx_power_set_calls, 1, "landing should switch VTX power once");
     zassert_false(stub_vtx_power_last, "landing should power the VTX/RunCam off");
 
     // Staying in the landed state must not re-send shutdown commands
     state_machine_test_step(ground_altitude + 1.0f, 0.0f, t + 100);
-    zassert_equal(stub_runcam_stop_calls, 1, "landed steady state should not resend commands");
+    zassert_equal(stub_runcam_stop_calls, 0, "landed steady state should not send commands");
     zassert_equal(stub_vtx_power_set_calls, 1, "landed steady state should not resend commands");
 }
 

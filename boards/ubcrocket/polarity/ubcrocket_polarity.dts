@@ -33,10 +33,10 @@
 	outputs {
 		compatible = "gpio-leds";
 
-		// PLACEHOLDER: VTX/RunCam power switch pin and active level are
-		// unconfirmed -- verify with the hardware team before flight.
+		// VTX/RunCam power switch on PD6 (confirmed by hardware team).
+		// Active level assumed high.
 		vtx_pwr: vtx-pwr {
-			gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiod 6 GPIO_ACTIVE_HIGH>;
 			label = "VTX RunCam Power";
 		};
 	};
@@ -52,17 +52,17 @@
         radio0 = &radio0;
         sdmmc1 = &sdmmc1;
         vtx-pwr = &vtx_pwr;
-        runcam-uart = &usart2;
+        runcam-uart = &uart4;
     };
 };
 
-// RunCam control UART
-// PLACEHOLDER: which USART goes to the RunCam (and its pins/baud) is
-// unconfirmed -- verify with the hardware team. USART2 on PA2/PA3 at the
-// RunCam Device Protocol default baud is assumed for now.
-&usart2 {
+// RunCam control UART on UART4 (confirmed by hardware team).
+// PLACEHOLDER: the UART4 pin pair is unconfirmed -- PA0/PA1 assumed
+// (package also offers PA12/PA11, PB9/PB8, PD1/PD0, PD12/PD11; PC10/PC11
+// are taken by SDMMC). Baud is the RunCam Device Protocol default.
+&uart4 {
     status = "okay";
-    pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
+    pinctrl-0 = <&uart4_tx_pa0 &uart4_rx_pa1>;
     pinctrl-names = "default";
     current-speed = <115200>;
 };
