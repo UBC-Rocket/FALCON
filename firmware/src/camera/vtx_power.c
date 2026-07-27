@@ -7,13 +7,66 @@
 
 LOG_MODULE_REGISTER(vtx_power, LOG_LEVEL_INF);
 
+#if DT_NODE_EXISTS(DT_ALIAS(led0))
+
+static const struct gpio_dt_spec vtx_status_led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+static bool led_configured;
+
 /**
- * @brief Update the shared camera status with the new power state.
+ * @brief Mirror the VTX power state on led0 (green LED, PA10) so the state of
+ * the vtx-pwr output (PD6) is visible on the board without a scope.
+ *
+ * Best-effort: a failure here is logged but never propagated, since the LED is
+ * only an indicator and must not make vtx_power_set() report failure.
+ */
+static void vtx_status_led_set(bool on)
+{
+    int ret;
+
+    if (!gpio_is_ready_dt(&vtx_status_led)) {
+        LOG_WRN("VTX status LED not ready");
+        return;
+    }
+
+    /* Same lazy-configure as the power pin: the landed shutdown can run
+     * before vtx_power_init() has touched the LED. */
+    if (!led_configured) {
+        ret = gpio_pin_configure_dt(&vtx_status_led,
+                                    on ? GPIO_OUTPUT_ACTIVE : GPIO_OUTPUT_INACTIVE);
+        if (ret == 0) {
+            led_configured = true;
+        }
+    } else {
+        ret = gpio_pin_set_dt(&vtx_status_led, on ? 1 : 0);
+    }
+
+    if (ret < 0) {
+        LOG_WRN("Failed to drive VTX status LED: %d", ret);
+    }
+}
+
+#else /* no led0 alias (e.g. native_sim) */
+
+static void vtx_status_led_set(bool on)
+{
+    ARG_UNUSED(on);
+}
+
+#endif
+
+/**
+ * @brief Update the shared camera status with the new power state and mirror
+ * the state on led0.
  * Cutting power also stops any recording in progress.
+ *
+ * Called only after the power pin has actually been driven, so the LED and the
+ * telemetry both track the real state of the output.
  */
 static void update_shared_power(bool on)
 {
     struct camera_data cam;
+
+    vtx_status_led_set(on);
 
     get_camera_data(&cam);
     cam.vtx_power_on = on;

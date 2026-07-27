@@ -77,8 +77,8 @@ int rfd900x_apply_config(const RfdConfig *cfg)
 }
 
 #else /* rfd-uart absent or disabled (native_sim, or hardware team says
-       * UART2 must stay off -- see the usart2 node in the board dts):
-       * simulate the modem */
+       * UART2 must stay off -- the board dts has no usart2 node and PD6 is
+       * the vtx_pwr GPIO instead): simulate the modem */
 
 int rfd900x_init(void)
 {

@@ -19,6 +19,8 @@
     leds {
 		compatible = "gpio-leds";
 
+		// led0: driven by vtx_power.c as a visual mirror of the vtx_pwr
+		// output on PD6 (lit = VTX/RunCam rail powered).
 		green_led: green-led {
 			gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
 			label = "Green LED";
@@ -34,6 +36,9 @@
 		compatible = "gpio-leds";
 
 		// VTX/RunCam power switch on PD6 (confirmed by hardware team).
+		// PD6/PD5 are the USART2 RX/TX pair on this package, but the pair is
+		// broken up here: PD6 is a plain GPIO output and PD5 is left
+		// unconfigured. See the usart2 note below.
 		// Active level assumed high.
 		vtx_pwr: vtx-pwr {
 			gpios = <&gpiod 6 GPIO_ACTIVE_HIGH>;
@@ -53,34 +58,28 @@
         sdmmc1 = &sdmmc1;
         vtx-pwr = &vtx_pwr;
         runcam-uart = &uart4;
-        rfd-uart = &usart2;
     };
 };
 
 // RunCam control UART on UART4 (confirmed by hardware team).
-// PLACEHOLDER: the UART4 pin pair is unconfirmed -- PA0/PA1 assumed
-// (package also offers PA12/PA11, PB9/PB8, PD1/PD0, PD12/PD11; PC10/PC11
-// are taken by SDMMC). Baud is the RunCam Device Protocol default.
+// Pin pair is PD1 (TX) / PD0 (RX); the earlier PA0/PA1 assumption was wrong.
+// Baud is the RunCam Device Protocol default.
 &uart4 {
     status = "okay";
-    pinctrl-0 = <&uart4_tx_pa0 &uart4_rx_pa1>;
+    pinctrl-0 = <&uart4_tx_pd1 &uart4_rx_pd0>;
     pinctrl-names = "default";
     current-speed = <115200>;
 };
 
-// RFD900x modem serial: DISABLED per hardware team (2026-07-26).
-// The PA2/PA3 direct-line assumption from the two-way radio feature was
-// wrong -- the modem's data serial is fed by the ulysses-gnss-radio board,
-// and FALCON driving PA2 as a UART TX contends with that path. Keep the
-// node disabled so rfd900x.c falls back to its simulated transport; when
-// the real reconfig path is confirmed (likely AT-passthrough via the GNSS
-// board), swap the transport in firmware/src/radio/rfd900x.c.
-&usart2 {
-    status = "disabled";
-    pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
-    pinctrl-names = "default";
-    current-speed = <57600>;
-};
+// USART2 is intentionally absent. The RFD900x modem serial was assumed to
+// live here (first on PA2/PA3, then on the PD5 TX / PD6 RX pair), but the
+// modem's data serial is fed by the ulysses-gnss-radio board and FALCON
+// driving a UART TX into it contends with that path. The pair is now split
+// up: PD6 is the vtx_pwr GPIO output (see the outputs node above) and PD5 is
+// left unconfigured. The SoC dtsi leaves usart2 disabled, so rfd900x.c falls
+// back to its simulated transport; when the real reconfig path is confirmed
+// (likely AT-passthrough via the GNSS board), swap the transport in
+// firmware/src/radio/rfd900x.c.
 
 // Enable and configure SPI2
 &spi1 {

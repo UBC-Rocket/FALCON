@@ -11,7 +11,7 @@
  * Confirmed by the hardware team (live in the devicetree,
  * boards/ubcrocket/polarity/ubcrocket_polarity.dts):
  *   - vtx-pwr GPIO: PD6 (active level assumed high)
- *   - runcam-uart port: UART4 (pin pair still unconfirmed, PA0/PA1 assumed)
+ *   - runcam-uart port: UART4 on PD1 (TX) / PD0 (RX)
  */
 
 /*
