@@ -89,17 +89,19 @@ int vtx_power_init(void)
         return -ENODEV;
     }
 
-    /* Default on: a firmware reboot mid-flight must not leave the VTX and
-     * RunCam dark. Ground crew can power them off over the uplink. */
-    int ret = gpio_pin_configure_dt(&vtx_pwr_gpio, GPIO_OUTPUT_ACTIVE);
+    /* Default off: PD6 comes up low and the VTX/RunCam rail stays unpowered
+     * until the ground crew switches it on over the uplink. Note this also
+     * means a firmware reboot mid-flight drops the rail until commanded back
+     * on. */
+    int ret = gpio_pin_configure_dt(&vtx_pwr_gpio, GPIO_OUTPUT_INACTIVE);
     if (ret < 0) {
         LOG_ERR("Failed to configure VTX power GPIO: %d", ret);
         return ret;
     }
 
     initialized = true;
-    update_shared_power(true);
-    LOG_INF("VTX/RunCam power on");
+    update_shared_power(false);
+    LOG_INF("VTX/RunCam power off");
     return 0;
 }
 
@@ -138,7 +140,7 @@ int vtx_power_set(bool on)
 int vtx_power_init(void)
 {
     LOG_WRN("No vtx-pwr devicetree alias; simulating VTX power switch");
-    update_shared_power(true);
+    update_shared_power(false);
     return 0;
 }
 

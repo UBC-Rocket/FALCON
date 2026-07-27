@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 /**
- * @brief Configure the VTX/RunCam power switch GPIO (powered on by default)
+ * @brief Configure the VTX/RunCam power switch GPIO (powered off by default)
  * @return 0 on success, negative errno on failure
  */
 int vtx_power_init(void);
