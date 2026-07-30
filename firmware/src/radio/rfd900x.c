@@ -1,4 +1,6 @@
 #include <zephyr/kernel.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
 #include "rfd900x.h"
 #include "rfd900x_at.h"
@@ -18,6 +20,59 @@ LOG_MODULE_REGISTER(rfd900x, LOG_LEVEL_INF);
 
 /* One AT session at a time; today only the command executor calls in */
 K_MUTEX_DEFINE(rfd_mutex);
+
+#if DT_NODE_EXISTS(DT_ALIAS(led1))
+
+static const struct gpio_dt_spec reconfig_led = GPIO_DT_SPEC_GET(DT_ALIAS(led1), gpios);
+static bool reconfig_led_configured;
+
+/**
+ * @brief Show "reconfiguration in progress" on led1 (red LED, PA9).
+ *
+ * A reconfig blocks for seconds and takes the RF link down with it, so
+ * telemetry cannot report its own progress -- the LED is the only local
+ * indication that the modem is mid-session rather than dead. Lit for the
+ * whole session, including the guard time; out once the modem is rebooting
+ * (or the session has been aborted).
+ *
+ * led0 already mirrors the VTX power rail (see camera/vtx_power.c), so this
+ * is the other one.
+ *
+ * Best-effort: a failure here is logged but never propagated, since an
+ * indicator must not make a reconfiguration report failure.
+ */
+static void reconfig_led_set(bool on)
+{
+    int ret;
+
+    if (!gpio_is_ready_dt(&reconfig_led)) {
+        LOG_WRN("Reconfig status LED not ready");
+        return;
+    }
+
+    if (!reconfig_led_configured) {
+        ret = gpio_pin_configure_dt(&reconfig_led,
+                                    on ? GPIO_OUTPUT_ACTIVE : GPIO_OUTPUT_INACTIVE);
+        if (ret == 0) {
+            reconfig_led_configured = true;
+        }
+    } else {
+        ret = gpio_pin_set_dt(&reconfig_led, on ? 1 : 0);
+    }
+
+    if (ret < 0) {
+        LOG_WRN("Failed to drive reconfig status LED: %d", ret);
+    }
+}
+
+#else /* no led1 alias (e.g. native_sim) */
+
+static void reconfig_led_set(bool on)
+{
+    ARG_UNUSED(on);
+}
+
+#endif
 
 /* Poll interval while waiting on modem bytes. The AT engine's timeouts are
  * hundreds of milliseconds, so a short sleep costs nothing and keeps the SPI
@@ -101,6 +156,10 @@ int rfd900x_apply_config(const RfdConfig *cfg)
 
     k_mutex_lock(&rfd_mutex, K_FOREVER);
 
+    /* Lit for the whole session. Every path below reaches the matching
+     * clear before returning, so the LED cannot be stranded on. */
+    reconfig_led_set(true);
+
     /* Telemetry flowing into the modem serial would break the guard-time
      * silence "+++" needs, so pause downlink for the session. Suspending
      * FALCON's side first means the ENTER below finds little or nothing
@@ -130,6 +189,8 @@ int rfd900x_apply_config(const RfdConfig *cfg)
     }
 
     radio_tx_suspend(false);
+
+    reconfig_led_set(false);
 
     k_mutex_unlock(&rfd_mutex);
     return ret;
