@@ -36,6 +36,19 @@ static const struct spi_dt_spec gnss_spi =
  * GPS RX, radio command RX). */
 K_MUTEX_DEFINE(gnss_spi_mutex);
 
+/*
+ * Transaction buffers live here rather than on the caller's stack: at 261
+ * bytes each they are far too big for it. The AT session in particular
+ * reaches this code five frames below rfd900x_at_apply(), and the pair
+ * overflowed cmd_exec's stack outright.
+ *
+ * Every transaction already runs under gnss_spi_mutex, so sharing them is
+ * safe -- but only if all reads and writes happen inside the lock, payload
+ * copy-out included.
+ */
+static uint8_t spi_tx_buf[SPI_RADIO_TX_SIZE];
+static uint8_t spi_rx_buf[SPI_RADIO_RX_SIZE];
+
 bool gnss_spi_ready(void)
 {
     return spi_is_ready_dt(&gnss_spi);
@@ -43,19 +56,13 @@ bool gnss_spi_ready(void)
 
 int gnss_spi_radio_tx(const uint8_t *cobs_data, size_t cobs_len)
 {
-    uint8_t tx_buf[SPI_RADIO_TX_SIZE] = {0};
-
     if (cobs_len > GNSS_SPI_MAX_COBS_SIZE) {
         return -EINVAL;
     }
 
-    tx_buf[0] = SPI_CMD_RADIO_TX;
-    /* bytes 1-4 are dummy, remaining payload zero-padded (already zeroed) */
-    memcpy(&tx_buf[GNSS_SPI_HEADER_SIZE], cobs_data, cobs_len);
-
     const struct spi_buf spi_tx = {
-        .buf = tx_buf,
-        .len = sizeof(tx_buf),
+        .buf = spi_tx_buf,
+        .len = SPI_RADIO_TX_SIZE,
     };
     const struct spi_buf_set tx_set = {
         .buffers = &spi_tx,
@@ -63,7 +70,14 @@ int gnss_spi_radio_tx(const uint8_t *cobs_data, size_t cobs_len)
     };
 
     k_mutex_lock(&gnss_spi_mutex, K_FOREVER);
+
+    memset(spi_tx_buf, 0, SPI_RADIO_TX_SIZE);
+    spi_tx_buf[0] = SPI_CMD_RADIO_TX;
+    /* bytes 1-4 are dummy, remaining payload zero-padded by the memset */
+    memcpy(&spi_tx_buf[GNSS_SPI_HEADER_SIZE], cobs_data, cobs_len);
+
     int ret = spi_write_dt(&gnss_spi, &tx_set);
+
     k_mutex_unlock(&gnss_spi_mutex);
 
     return ret;
@@ -74,15 +88,14 @@ int gnss_spi_radio_tx(const uint8_t *cobs_data, size_t cobs_len)
  */
 static int gnss_spi_read(uint8_t cmd, uint8_t *payload_out, size_t payload_size)
 {
-    uint8_t tx_buf[SPI_RADIO_RX_SIZE] = {0};
-    uint8_t rx_buf[SPI_RADIO_RX_SIZE] = {0};
     size_t transfer_size = GNSS_SPI_HEADER_SIZE + payload_size;
 
-    tx_buf[0] = cmd;
-    /* bytes 1-4 are dummy, rest is zero (master clocks out zeros) */
+    if (transfer_size > SPI_RADIO_RX_SIZE) {
+        return -EINVAL;
+    }
 
     const struct spi_buf spi_tx = {
-        .buf = tx_buf,
+        .buf = spi_tx_buf,
         .len = transfer_size,
     };
     const struct spi_buf_set tx_set = {
@@ -91,7 +104,7 @@ static int gnss_spi_read(uint8_t cmd, uint8_t *payload_out, size_t payload_size)
     };
 
     const struct spi_buf spi_rx = {
-        .buf = rx_buf,
+        .buf = spi_rx_buf,
         .len = transfer_size,
     };
     const struct spi_buf_set rx_set = {
@@ -100,17 +113,21 @@ static int gnss_spi_read(uint8_t cmd, uint8_t *payload_out, size_t payload_size)
     };
 
     k_mutex_lock(&gnss_spi_mutex, K_FOREVER);
-    int ret = spi_transceive_dt(&gnss_spi, &tx_set, &rx_set);
-    k_mutex_unlock(&gnss_spi_mutex);
 
-    if (ret < 0) {
-        return ret;
+    memset(spi_tx_buf, 0, transfer_size);
+    spi_tx_buf[0] = cmd;
+    /* bytes 1-4 are dummy, rest is zero (master clocks out zeros) */
+
+    int ret = spi_transceive_dt(&gnss_spi, &tx_set, &rx_set);
+
+    /* Copy out under the lock -- the buffers are shared */
+    if (ret >= 0) {
+        memcpy(payload_out, &spi_rx_buf[GNSS_SPI_HEADER_SIZE], payload_size);
     }
 
-    /* Payload starts after header (cmd + dummy bytes) */
-    memcpy(payload_out, &rx_buf[GNSS_SPI_HEADER_SIZE], payload_size);
+    k_mutex_unlock(&gnss_spi_mutex);
 
-    return 0;
+    return ret < 0 ? ret : 0;
 }
 
 int gnss_spi_gps_read(uint8_t *payload_out)
@@ -128,13 +145,9 @@ int gnss_spi_radio_rx(uint8_t *payload_out)
  */
 static int gnss_spi_command(uint8_t cmd)
 {
-    uint8_t tx_buf[SPI_AT_CTRL_SIZE] = {0};
-
-    tx_buf[0] = cmd;
-
     const struct spi_buf spi_tx = {
-        .buf = tx_buf,
-        .len = sizeof(tx_buf),
+        .buf = spi_tx_buf,
+        .len = SPI_AT_CTRL_SIZE,
     };
     const struct spi_buf_set tx_set = {
         .buffers = &spi_tx,
@@ -142,7 +155,12 @@ static int gnss_spi_command(uint8_t cmd)
     };
 
     k_mutex_lock(&gnss_spi_mutex, K_FOREVER);
+
+    memset(spi_tx_buf, 0, SPI_AT_CTRL_SIZE);
+    spi_tx_buf[0] = cmd;
+
     int ret = spi_write_dt(&gnss_spi, &tx_set);
+
     k_mutex_unlock(&gnss_spi_mutex);
 
     return ret;
@@ -160,20 +178,13 @@ int gnss_spi_at_exit(void)
 
 int gnss_spi_at_write(const uint8_t *data, size_t len)
 {
-    uint8_t tx_buf[SPI_AT_SIZE] = {0};
-
     if (len == 0 || len > GNSS_SPI_AT_DATA_MAX) {
         return -EINVAL;
     }
 
-    tx_buf[0] = SPI_CMD_RADIO_AT_TX;
-    /* bytes 1-4 are dummy; payload is [LEN:1][DATA:N] zero-padded to 64 */
-    tx_buf[GNSS_SPI_HEADER_SIZE] = (uint8_t)len;
-    memcpy(&tx_buf[GNSS_SPI_HEADER_SIZE + 1], data, len);
-
     const struct spi_buf spi_tx = {
-        .buf = tx_buf,
-        .len = sizeof(tx_buf),
+        .buf = spi_tx_buf,
+        .len = SPI_AT_SIZE,
     };
     const struct spi_buf_set tx_set = {
         .buffers = &spi_tx,
@@ -181,7 +192,15 @@ int gnss_spi_at_write(const uint8_t *data, size_t len)
     };
 
     k_mutex_lock(&gnss_spi_mutex, K_FOREVER);
+
+    memset(spi_tx_buf, 0, SPI_AT_SIZE);
+    spi_tx_buf[0] = SPI_CMD_RADIO_AT_TX;
+    /* bytes 1-4 are dummy; payload is [LEN:1][DATA:N] zero-padded to 64 */
+    spi_tx_buf[GNSS_SPI_HEADER_SIZE] = (uint8_t)len;
+    memcpy(&spi_tx_buf[GNSS_SPI_HEADER_SIZE + 1], data, len);
+
     int ret = spi_write_dt(&gnss_spi, &tx_set);
+
     k_mutex_unlock(&gnss_spi_mutex);
 
     return ret;

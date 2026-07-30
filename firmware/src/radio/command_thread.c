@@ -17,7 +17,11 @@ LOG_MODULE_REGISTER(command_thread, LOG_LEVEL_INF);
 #define COMMAND_RX_PRIORITY 6
 #define COMMAND_RX_POLL_MS 200
 
-#define COMMAND_EXEC_STACK_SIZE 2048
+/* The RFD900x AT session is by far the deepest thing this thread does: the
+ * session engine nests four frames below rfd900x_apply_config() before it
+ * even reaches the SPI driver, and any of those frames can take an
+ * interrupt. 2048 was not enough for it. */
+#define COMMAND_EXEC_STACK_SIZE 3072
 #define COMMAND_EXEC_PRIORITY 7
 
 /* COBS frame limits, mirroring the telemetry TX path */
