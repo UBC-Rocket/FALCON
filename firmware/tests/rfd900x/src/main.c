@@ -266,6 +266,52 @@ ZTEST(rfd900x_at, test_multipoint_node_id_prefix_is_accepted)
     zassert_true(script_done(), "sequence should complete");
 }
 
+ZTEST(rfd900x_at, test_unterminated_escape_echo_fused_with_reply)
+{
+    /* Regression, observed on hardware 2026-07-30: the modem echoes "+++"
+     * back, and because the escape is sent without CR/LF the echo carries
+     * no terminator -- it fuses with the reply, so the line arrives as
+     * "+++[1] OK" and start-anchored matching misses it. */
+    static const struct script_step steps[] = {
+        {"+++", "+++[1] OK\r\n"},
+        {"ATS3=42", "ATS3=42\r\n[1] OK\r\n"},
+        {"ATS3?", "ATS3?\r\n[1] 42\r\n"},
+        {"AT&W", "[1] OK\r\n"},
+        {"ATZ", ""},
+    };
+    RfdConfig cfg = RfdConfig_init_zero;
+
+    cfg.has_net_id = true;
+    cfg.net_id = 42;
+
+    mock_reset(steps, ARRAY_SIZE(steps));
+
+    zassert_equal(rfd900x_at_apply(&mock_transport, &cfg), 0,
+                  "an echo fused to the reply must not hide the OK");
+    zassert_true(script_done(), "sequence should complete");
+}
+
+ZTEST(rfd900x_at, test_command_echo_alone_is_not_mistaken_for_a_reply)
+{
+    /* The tolerance above must not go so far that a bare command echo
+     * counts as an acknowledgement: only the OK may satisfy the wait. */
+    static const struct script_step steps[] = {
+        {"+++", "[1] OK\r\n"},
+        {"ATS3=42", "ATS3=42\r\n"}, /* echo, never acknowledged */
+    };
+    RfdConfig cfg = RfdConfig_init_zero;
+
+    cfg.has_net_id = true;
+    cfg.net_id = 42;
+
+    mock_reset(steps, ARRAY_SIZE(steps));
+
+    zassert_equal(rfd900x_at_apply(&mock_transport, &cfg), -ETIMEDOUT,
+                  "a bare echo must not be read as an OK");
+    zassert_false(tx_contains("AT&W"), "EEPROM must not be written");
+    zassert_true(tx_contains("ATO"), "session must abort back to online state");
+}
+
 ZTEST(rfd900x_at, test_prefixed_readback_mismatch_still_aborts)
 {
     /* The prefix must be stripped for parsing only -- it must not make a

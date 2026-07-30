@@ -154,34 +154,33 @@ static int at_read_line(const struct rfd900x_transport *io, char *buf, size_t bu
 }
 
 /**
- * @brief Strip the multipoint node-id prefix from a response line.
+ * @brief Reduce a response line to its final token for matching.
  *
- * RFD900x multipoint firmware tags every AT response with the node that
- * answered -- "[1] OK" rather than "OK", "[1] 905000" rather than "905000".
- * Point-to-point firmware omits it entirely, so the prefix is optional and
- * must never be required. Confirmed on hardware 2026-07-30: the modem
- * answered "+++" with "[1] OK" and an exact-match compare discarded it.
+ * Two things observed on hardware (2026-07-30) put junk in front of the
+ * part we care about, and anchoring at the start of the line handles
+ * neither:
  *
- * @return Pointer into line, past "[...]" and any following spaces
+ *   - Multipoint firmware tags responses with the node that answered:
+ *     "[1] OK" rather than "OK", "[1] 905000" rather than "905000".
+ *   - The modem echoes "+++" back, and since the escape is sent without
+ *     CR/LF the echo has no terminator either -- so it fuses with the
+ *     reply that follows and the line arrives as "+++[1] OK".
+ *
+ * Taking the last space/bracket-delimited token covers both, and leaves
+ * command echoes ("ATS8=905000") as a single non-matching token so they
+ * are still ignored rather than mistaken for a reply.
  */
-static const char *strip_node_prefix(const char *line)
+static const char *last_token(const char *line)
 {
-    if (line[0] != '[') {
-        return line;
+    const char *token = line;
+
+    for (const char *c = line; *c != '\0'; c++) {
+        if (*c == ' ' || *c == '\t' || *c == ']') {
+            token = c + 1;
+        }
     }
 
-    const char *close = strchr(line, ']');
-
-    if (close == NULL) {
-        return line; /* not a prefix after all; match against the whole line */
-    }
-
-    close++;
-    while (*close == ' ') {
-        close++;
-    }
-
-    return close;
+    return token;
 }
 
 /**
@@ -198,7 +197,7 @@ static int at_wait_ok(const struct rfd900x_transport *io, int32_t timeout_ms)
         if (ret < 0) {
             return ret;
         }
-        if (strcmp(strip_node_prefix(line), "OK") == 0) {
+        if (strcmp(last_token(line), "OK") == 0) {
             return 0;
         }
         if (strstr(line, "ERROR") != NULL) {
@@ -229,7 +228,7 @@ static int at_read_value(const struct rfd900x_transport *io, int32_t timeout_ms,
         }
 
         /* Multipoint firmware answers "[1] 905000", not "905000" */
-        const char *value = strip_node_prefix(line);
+        const char *value = last_token(line);
         bool all_digits = value[0] != '\0';
 
         for (const char *c = value; *c != '\0'; c++) {
