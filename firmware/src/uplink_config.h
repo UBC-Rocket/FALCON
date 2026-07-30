@@ -48,11 +48,12 @@
 /*
  * RFD900x remote reconfiguration (checklist Phase 4).
  *
- * The direct-UART path (USART2/PA2-PA3) is DISABLED per the hardware team
- * (2026-07-26): the modem serial is fed by the GNSS board, and FALCON
- * driving PA2 contends with it. rfd900x.c runs its simulated transport
- * until the real reconfig path is confirmed (likely AT-passthrough via
- * the GNSS board) -- the AT session engine is transport-agnostic.
+ * CONFIRMED (2026-07-30): reconfiguration runs as AT passthrough over the
+ * SPI link to the ulysses-gnss-radio board, which owns the modem serial
+ * (UART5, 57600 8N1). The direct-UART path (USART2/PA2-PA3) stays DISABLED
+ * per the hardware team -- FALCON driving PA2 contends with that board.
+ * See gnss_spi.h for the opcode family and rfd900x.c for the transport;
+ * the AT session engine itself is transport-agnostic.
  *
  * Timing follows the SiK/RFD900x AT spec: 1 s of serial silence before
  * "+++" (no CR/LF), and roughly 1 s more before the modem answers "OK".

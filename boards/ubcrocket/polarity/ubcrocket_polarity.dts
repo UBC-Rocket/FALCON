@@ -76,10 +76,9 @@
 // modem's data serial is fed by the ulysses-gnss-radio board and FALCON
 // driving a UART TX into it contends with that path. The pair is now split
 // up: PD6 is the vtx_pwr GPIO output (see the outputs node above) and PD5 is
-// left unconfigured. The SoC dtsi leaves usart2 disabled, so rfd900x.c falls
-// back to its simulated transport; when the real reconfig path is confirmed
-// (likely AT-passthrough via the GNSS board), swap the transport in
-// firmware/src/radio/rfd900x.c.
+// left unconfigured. The SoC dtsi leaves usart2 disabled and nothing needs
+// it: remote AT reconfiguration goes through the GNSS board's SPI
+// passthrough opcodes instead (firmware/src/radio/rfd900x.c).
 
 // Enable and configure SPI2
 &spi1 {

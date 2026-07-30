@@ -4,7 +4,11 @@
 #include <GroundCommand.pb.h>
 
 /**
- * @brief Check that the RFD900x config serial line is ready
+ * @brief Check that the path to the RFD900x config serial is ready
+ *
+ * The modem serial is owned by the ulysses-gnss-radio board, so this checks
+ * the SPI link to that board rather than a local UART.
+ *
  * @return 0 on success, negative errno on failure
  */
 int rfd900x_init(void);
