@@ -241,6 +241,53 @@ ZTEST(rfd900x_at, test_noise_lines_before_ok_are_ignored)
     zassert_true(script_done(), "sequence should complete");
 }
 
+ZTEST(rfd900x_at, test_multipoint_node_id_prefix_is_accepted)
+{
+    /* Regression, observed on hardware 2026-07-30: multipoint firmware tags
+     * every response with the node that answered ("[1] OK", "[1] 905000").
+     * An exact-match compare discarded a valid reply and the session timed
+     * out at command-mode entry. */
+    static const struct script_step steps[] = {
+        {"+++", "[1] OK\r\n"},
+        {"ATS8=905000", "[1] OK\r\n"},
+        {"ATS8?", "[1] 905000\r\n"},
+        {"AT&W", "[1] OK\r\n"},
+        {"ATZ", ""},
+    };
+    RfdConfig cfg = RfdConfig_init_zero;
+
+    cfg.has_min_freq_khz = true;
+    cfg.min_freq_khz = 905000;
+
+    mock_reset(steps, ARRAY_SIZE(steps));
+
+    zassert_equal(rfd900x_at_apply(&mock_transport, &cfg), 0,
+                  "node-id prefixed replies must be accepted");
+    zassert_true(script_done(), "sequence should complete");
+}
+
+ZTEST(rfd900x_at, test_prefixed_readback_mismatch_still_aborts)
+{
+    /* The prefix must be stripped for parsing only -- it must not make a
+     * wrong readback value look acceptable. */
+    static const struct script_step steps[] = {
+        {"+++", "[1] OK\r\n"},
+        {"ATS8=905000", "[1] OK\r\n"},
+        {"ATS8?", "[1] 915000\r\n"}, /* modem clamped the value */
+    };
+    RfdConfig cfg = RfdConfig_init_zero;
+
+    cfg.has_min_freq_khz = true;
+    cfg.min_freq_khz = 905000;
+
+    mock_reset(steps, ARRAY_SIZE(steps));
+
+    zassert_not_equal(rfd900x_at_apply(&mock_transport, &cfg), 0,
+                      "a clamped readback must still fail");
+    zassert_false(tx_contains("AT&W"), "EEPROM must not be written");
+    zassert_true(tx_contains("ATO"), "session must abort back to online state");
+}
+
 /* ---- Validation: the modem must never be touched --------------------- */
 
 ZTEST(rfd900x_at, test_empty_config_rejected_without_touching_modem)
@@ -310,7 +357,12 @@ ZTEST(rfd900x_at, test_no_ok_after_escape_aborts_before_any_command)
                   "entry timeout must fail the session");
     zassert_false(tx_contains("ATS"), "no register writes outside command mode");
     zassert_false(tx_contains("AT&W"), "AT&W must never be sent");
-    zassert_false(tx_contains("ATO"), "no ATO when command mode was never entered");
+
+    /* ATO is sent even here. Silence does not prove the modem stayed in
+     * data mode -- on hardware it answered in a form we failed to match,
+     * and a modem left in command mode is a dead link. ATO in data mode is
+     * harmless; skipping it when we are wrong is not. */
+    zassert_true(tx_contains("ATO"), "modem must be returned to the online state");
 }
 
 ZTEST(rfd900x_at, test_error_reply_aborts_with_ato_and_no_eeprom_write)

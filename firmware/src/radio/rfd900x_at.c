@@ -154,6 +154,37 @@ static int at_read_line(const struct rfd900x_transport *io, char *buf, size_t bu
 }
 
 /**
+ * @brief Strip the multipoint node-id prefix from a response line.
+ *
+ * RFD900x multipoint firmware tags every AT response with the node that
+ * answered -- "[1] OK" rather than "OK", "[1] 905000" rather than "905000".
+ * Point-to-point firmware omits it entirely, so the prefix is optional and
+ * must never be required. Confirmed on hardware 2026-07-30: the modem
+ * answered "+++" with "[1] OK" and an exact-match compare discarded it.
+ *
+ * @return Pointer into line, past "[...]" and any following spaces
+ */
+static const char *strip_node_prefix(const char *line)
+{
+    if (line[0] != '[') {
+        return line;
+    }
+
+    const char *close = strchr(line, ']');
+
+    if (close == NULL) {
+        return line; /* not a prefix after all; match against the whole line */
+    }
+
+    close++;
+    while (*close == ' ') {
+        close++;
+    }
+
+    return close;
+}
+
+/**
  * @brief Wait for an "OK" line, ignoring command echo and other noise
  */
 static int at_wait_ok(const struct rfd900x_transport *io, int32_t timeout_ms)
@@ -167,7 +198,7 @@ static int at_wait_ok(const struct rfd900x_transport *io, int32_t timeout_ms)
         if (ret < 0) {
             return ret;
         }
-        if (strcmp(line, "OK") == 0) {
+        if (strcmp(strip_node_prefix(line), "OK") == 0) {
             return 0;
         }
         if (strstr(line, "ERROR") != NULL) {
@@ -197,9 +228,11 @@ static int at_read_value(const struct rfd900x_transport *io, int32_t timeout_ms,
             return -EIO;
         }
 
-        bool all_digits = line[0] != '\0';
+        /* Multipoint firmware answers "[1] 905000", not "905000" */
+        const char *value = strip_node_prefix(line);
+        bool all_digits = value[0] != '\0';
 
-        for (const char *c = line; *c != '\0'; c++) {
+        for (const char *c = value; *c != '\0'; c++) {
             if (*c < '0' || *c > '9') {
                 all_digits = false;
                 break;
@@ -207,7 +240,7 @@ static int at_read_value(const struct rfd900x_transport *io, int32_t timeout_ms,
         }
 
         if (all_digits) {
-            *value_out = (uint32_t)strtoul(line, NULL, 10);
+            *value_out = (uint32_t)strtoul(value, NULL, 10);
             return 0;
         }
     }
@@ -237,9 +270,13 @@ int rfd900x_at_apply(const struct rfd900x_transport *io, const RfdConfig *cfg)
 
     ret = at_wait_ok(io, RFD_AT_ENTER_TIMEOUT_MS);
     if (ret < 0) {
-        /* Not in command mode: nothing was touched, nothing to roll back */
+        /* No EEPROM write happened, so there is no config to roll back --
+         * but "we never saw OK" does not prove the modem ignored us. It may
+         * be sitting in command mode with an answer we failed to match, and
+         * leaving it there takes the link down for good. Abort through ATO
+         * so the modem is returned to the online state either way. */
         LOG_ERR("Modem did not enter AT command mode: %d", ret);
-        return ret;
+        goto abort;
     }
 
     for (size_t i = 0; i < n_writes; i++) {
